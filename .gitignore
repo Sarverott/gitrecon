@@ -1,4 +1,4 @@
-
+datasets/*/
 .pnpm-store
 *.log
 env.bak/
