@@ -6,6 +6,13 @@ vars:
   GREETING: Hello, World!
 
 tasks:
+  nb_to_marimo:
+    cmds:
+      - uv run marimo convert datasets/setups.ipynb > tools/datasets_setups.py
+      - uv run marimo convert docs/tests-with-md-parsing-and-rattish-implementations.ipynb > tools/draft-tests.py
+  lounch_notes:
+    cmds:
+      - uv run python -m notebook
   default:
     cmds:
       - echo "{{.GREETING}}"
