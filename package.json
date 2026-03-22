@@ -1,0 +1,26 @@
+{
+  "name": "gistrecon",
+  "version": "1.0.0",
+  "description": "toolset to discovery new gists on github",
+  "keywords": [
+    "gist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "x"
+  },
+  "license": "MIT",
+  "author": "Sett Sarverott",
+  "type": "commonjs",
+  "main": "src/gistrecon-js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "tast tast",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
