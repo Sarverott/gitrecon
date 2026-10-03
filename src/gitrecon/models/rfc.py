@@ -34,3 +34,7 @@ class RFC(Entity):
     @property
     def url(self) -> str:
         return f"https://www.rfc-editor.org/rfc/rfc{self.number}"
+
+    @property
+    def html_url(self) -> str:
+        return self.url

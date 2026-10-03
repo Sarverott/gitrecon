@@ -27,6 +27,13 @@ class FeedItem(Entity):
     def ident(self) -> str:
         return self.id
 
+    @property
+    def html_url(self) -> str | None:
+        return self.link
+
+    def to_json(self) -> dict[str, Any]:
+        return self.to_record() | {"url": self.link}
+
     def to_record(self) -> dict[str, Any]:
         """Raw buffer shape (JSON-ready)."""
         data = asdict(self)

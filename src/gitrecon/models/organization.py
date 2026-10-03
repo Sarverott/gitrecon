@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from gitrecon.models.base import Entity, parse_time
+from gitrecon.models.base import GITHUB, Entity, parse_time
 
 
 @dataclass
@@ -28,6 +28,10 @@ class Organization(Entity):
     @property
     def ident(self) -> str:
         return self.login.lower()
+
+    @property
+    def html_url(self) -> str:
+        return self.raw.get("html_url") or f"{GITHUB}/{self.login}"
 
     @classmethod
     def from_api(cls, data: dict[str, Any]) -> Organization:
