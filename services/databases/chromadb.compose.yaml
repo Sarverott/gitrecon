@@ -11,6 +11,3 @@ services:
       - "${BIND:-127.0.0.1}:${CHROMADB_PORT:-8000}:8000"
     volumes:
       - chromadb-data:/data
-
-volumes:
-  chromadb-data:

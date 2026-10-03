@@ -4,8 +4,12 @@
 # Every service has two profiles - its group and its own name - so nothing starts by
 # accident. Start them with their dependencies: task services:up -- <group|service>...
 # (services/control.py), see them all: task services:list. Settings: services/.env.example.
+#
+# Volumes are declared only in volumes.compose.yaml: each is the folder
+# datasets/_dockdrives/<volume> - task services:drives checks them, task services:backup archives them.
 
 include:
+  - ./volumes.compose.yaml          # every volume: datasets/_dockdrives/<name>
   - ./databases/compose.yaml
   - ./internals/compose.yaml
   - ./automations/compose.yaml

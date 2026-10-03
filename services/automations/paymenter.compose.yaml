@@ -26,7 +26,3 @@ services:
     volumes:
       - paymenter-app:/app
       - paymenter-var:/app/var
-
-volumes:
-  paymenter-app:
-  paymenter-var:

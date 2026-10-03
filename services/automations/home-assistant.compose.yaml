@@ -11,6 +11,3 @@ services:
       - "${BIND:-127.0.0.1}:${HOME_ASSISTANT_PORT:-8123}:8123"
     volumes:
       - home-assistant-config:/config
-
-volumes:
-  home-assistant-config:
