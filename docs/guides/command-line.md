@@ -1,6 +1,7 @@
 # Command line
 
-`gitrecon <command> --help` describes every option. Grouped by what they do.
+`gitrecon <command> --help` describes every option; `gitrecon menu` (or plain `gitrecon`) offers
+them all as forms - see [[menu]]. Grouped by what they do.
 
 **For programs:** most commands take `--json` (only data on stdout) and `--urls` (only web
 addresses, one per line) - see [[integration]] for the shapes. Example:
