@@ -25,6 +25,13 @@ class BlogArticle(Entity):
         return self.url
 
     @property
+    def html_url(self) -> str:
+        return self.url
+
+    def to_json(self) -> dict[str, Any]:
+        return self.to_record()
+
+    @property
     def url_checksum(self) -> int:
         """adler32 of the URL, as the original notebook printed it."""
         return zlib.adler32(self.url.encode("utf8"))

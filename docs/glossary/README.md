@@ -71,6 +71,12 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Digest](digest.md) | A summary of any amount of collected data, made by a local model. |
 | [Post drafts](post-drafts.md) | An SEO article and social posts written from a digest - drafts, never published by gitrecon. |
 
+## Interfaces
+
+| Element | One line |
+| --- | --- |
+| [Output mode](output-mode.md) | How a command prints: readable text, `--json` for programs, or `--urls` for addresses. |
+
 ## Delivery
 
 | Element | One line |

@@ -1,0 +1,255 @@
+"""Collecting commands: events, gists, stars, archive, links, feeds, rfc, blog."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from collections import Counter
+from pathlib import Path
+
+from gitrecon.cli.output import Output, add_output_flags
+from gitrecon.config import Config
+from gitrecon.storage import RawBuffer
+
+
+def _client(config: Config):
+    from gitrecon.sources.github_api import GitHubClient
+
+    return GitHubClient(config)
+
+
+def cmd_events(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.models import Event
+    from gitrecon.sources.events import EventPoller, Feed
+
+    buffer = RawBuffer(config.raw_dir)
+    feed = Feed.parse(args.feed)
+    poller = EventPoller(_client(config), feed, state_dir=config.state_dir)
+    for batch in poller.listen(max_rounds=None if args.watch else 1):
+        stored = buffer.append("events", batch, suffix=feed.name)
+        if out.machine:
+            out.stream((Event.from_api(record) for record in batch), text=str)
+        out.note(f"{feed.name}: +{stored} events (next poll in {poller.state.poll_interval}s)")
+    return 0
+
+
+def cmd_gists(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.models import Gist
+    from gitrecon.sources import gists
+
+    client = _client(config)
+    if args.user:
+        raw, suffix = gists.user_gists(client, args.user), f"user-{args.user}"
+    else:
+        raw, suffix = gists.public_gists(client, since=args.since, max_pages=args.pages), "public"
+    stored = RawBuffer(config.raw_dir).append("gists", raw, suffix=suffix)
+
+    def text(gist: Gist) -> str:
+        when = f"{gist.created_at:%Y-%m-%d %H:%M}" if gist.created_at else "?"
+        names = ", ".join(f.filename for f in gist.files)[:60]
+        return f"{when}  {gist.owner or '-':<20} {names:<60} {(gist.description or '')[:50]}"
+
+    out.listing([Gist.from_api(item) for item in raw], text=text,
+                summary=f"-- gists ({suffix}): {stored} stored")
+    return 0
+
+
+def cmd_stars(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources import stars
+
+    raw = stars.starred_raw(_client(config), args.user)
+    if args.save:
+        RawBuffer(config.raw_dir).append("stars", raw, suffix=f"user-{args.user}")
+
+    def text(star) -> str:
+        when = f"{star.starred_at:%Y-%m-%d}" if star.starred_at else "?"
+        return f"{when}  {star.repo.full_name:<50} {star.repo.language or '-':<14} *{star.repo.stargazers_count or 0}"
+
+    out.listing([stars.Star.from_api(args.user, item) for item in raw], text=text,
+                summary=lambda found: f"-- {len(found)} repositories starred by {args.user}")
+    return 0
+
+
+def cmd_archive(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources import gharchive
+
+    buffer = RawBuffer(config.raw_dir)
+    start = gharchive.parse_hour(args.start)
+    end = gharchive.parse_hour(args.end) if args.end else start
+    hours = []
+    for hour in gharchive.hour_range(start, end):
+        path = gharchive.download_hour(hour, buffer.partition("gharchive", hour), config)
+        hours.append({
+            "hour": hour.isoformat(),
+            "source": f"{config.gharchive_url}/{gharchive.archive_name(hour)}",
+            "path": str(path),
+            "bytes": path.stat().st_size,
+        })
+        if not out.machine:
+            print(f"{hour:%Y-%m-%d %H}:00 -> {path} ({path.stat().st_size / 2**20:.1f} MiB)")
+    if out.machine:
+        out.listing(hours, text=str, data=lambda h: h, url=lambda h: h["source"])
+    return 0
+
+
+def cmd_links(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources import links as harvest
+
+    root = Path(args.root)
+    found = harvest.harvest(root, exclude=[config.data_dir]) if args.all else harvest.harvest_gists(root)
+    if args.kind:
+        found = [link for link in found if link.kind in args.kind]
+    if args.save:
+        out.note(f"saved {harvest.save_catalog(found, config.links_catalog)}")
+
+    def summary(items) -> str:
+        counts = ", ".join(f"{k} {n}" for k, n in Counter(link.kind for link in items).most_common())
+        return f"-- {len(items)} links: {counts}"
+
+    out.listing(found, text=lambda link: f"{link.kind:<16} {link.url}", data=lambda link: link.to_dict(),
+                url=lambda link: link.url, summary=summary)
+    return 0
+
+
+def cmd_feeds(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.feeds import FeedReader, feed_key
+    from gitrecon.sources.links import load_catalog
+
+    urls = list(args.url)
+    if not urls:
+        if not config.links_catalog.exists():
+            out.note(f"no feed urls given and no catalog at {config.links_catalog} (run: gitrecon links --save)")
+            return 2
+        urls = [link.url for link in load_catalog(config.links_catalog) if link.kind == "feed"]
+    reader = FeedReader(state_file=config.state_dir / "feeds.json")
+    buffer = RawBuffer(config.raw_dir)
+    feeds, items = [], []
+    for url, result in reader.poll_many(urls).items():
+        if isinstance(result, Exception):
+            feeds.append({"url": url, "new": 0, "error": str(result)})
+            out.note(f"ERROR   {url}: {result}")
+            continue
+        if args.save and result:
+            buffer.append("feeds", (item.to_record() for item in result), suffix=feed_key(url))
+        feeds.append({"url": url, "new": len(result), "error": None})
+        items += result
+        if not out.machine:
+            print(f"+{len(result):<5} {url}")
+            if args.verbose_items:
+                for item in result:
+                    when = item.published or item.updated
+                    print(f"        {when:%Y-%m-%d} {item.title[:100]}" if when else f"        {item.title[:100]}")
+    out.result({"feeds": feeds, "items": [item.to_json() for item in items]},
+               text=f"-- {len(items)} new items from {len(urls)} feeds",
+               urls=(item.link for item in items if item.link))
+    return 0
+
+
+def cmd_rfc(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources import rfc_index
+
+    rfcs = rfc_index.parse_index(rfc_index.fetch_index())
+    if args.save:
+        path = config.data_dir / "catalog" / "rfc-index.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as fh:
+            for rfc in rfcs:
+                fh.write(json.dumps(rfc.to_dict(), ensure_ascii=False) + "\n")
+        out.note(f"saved {path}")
+    words = [w.lower() for w in args.search or []]
+    if args.number:
+        shown = [r for r in rfcs if r.number in args.number]
+    elif words:
+        shown = [r for r in rfcs if all(w in r.description.lower() for w in words)]
+    else:
+        shown = rfcs[-args.limit:]
+
+    def text(rfc) -> str:
+        line = f"RFC{rfc.number:<6} {rfc.date or '':<15} {(rfc.status or '-'):<22} {rfc.title[:90]}"
+        if not args.number:
+            return line
+        relations = [f"{name}: {', '.join(getattr(rfc, attr))}" for name, attr in (
+            ("obsoletes", "obsoletes"), ("obsoleted by", "obsoleted_by"), ("updates", "updates"),
+            ("updated by", "updated_by"), ("also", "also")) if getattr(rfc, attr)]
+        return "\n".join([line, f"        {', '.join(rfc.authors)}", f"        {rfc.url}",
+                          *(f"        {r}" for r in relations)])
+
+    out.listing(shown, text=text, summary=f"-- {len(shown)} of {len(rfcs)} RFCs")
+    return 0
+
+
+def cmd_blog(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources import blog
+
+    index_html = blog.fetch_html(args.url)
+    feeds = blog.discover_feeds(index_html, args.url)
+    links = blog.article_links(index_html, args.url)[: args.limit]
+    out.note(f"{len(links)} articles, feeds: {', '.join(feeds) or '-'}")
+    articles = [blog.html_to_article(url, blog.fetch_html(url), args.url) for url in links]
+    if args.save:
+        RawBuffer(config.raw_dir).append("blogs", (a.to_record() for a in articles),
+                                         suffix=blog.article_name(args.url).lower().replace(" ", "-") or "blog")
+    if args.dump and not out.machine:
+        print(f"# {args.url}\n\t-" + "\n\t-".join(links) + "\n\n---\n")
+        print("\n\n---\n\n".join(a.to_markdown() for a in articles))
+        return 0
+    out.listing(articles, text=lambda a: f"{a.url_checksum:>10}  {len(a.markdown):>7}c  {a.name}")
+    return 0
+
+
+def register(sub: argparse._SubParsersAction) -> None:
+    p = sub.add_parser("events", help="poll an Events API feed into the raw buffer")
+    p.add_argument("feed", nargs="?", default="public", help="public | user:X | org:X | repo:owner/name")
+    p.add_argument("-w", "--watch", action="store_true", help="keep listening")
+    add_output_flags(p)  # --json: JSON Lines, one event per line, as they arrive
+    p.set_defaults(func=cmd_events)
+
+    p = sub.add_parser("gists", help="fetch public (or one user's) gists into the raw buffer")
+    p.add_argument("--user")
+    p.add_argument("--since", help="ISO timestamp")
+    p.add_argument("--pages", type=int, default=3)
+    add_output_flags(p)
+    p.set_defaults(func=cmd_gists)
+
+    p = sub.add_parser("stars", help="list repositories starred by a user")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    p.add_argument("--save", action="store_true", help="also store them in the raw buffer")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_stars)
+
+    p = sub.add_parser("archive", help="download GH Archive hours into the raw buffer")
+    p.add_argument("start", help="YYYY-MM-DD-H (UTC)")
+    p.add_argument("end", nargs="?", help="YYYY-MM-DD-H, inclusive")
+    add_output_flags(p)  # --urls: the archive files' source addresses
+    p.set_defaults(func=cmd_archive)
+
+    p = sub.add_parser("links", help="harvest data source links from cloned gists (or any notes)")
+    p.add_argument("root", nargs="?", default="..", help="directory holding gist clones (default: ..)")
+    p.add_argument("--all", action="store_true", help="scan every note file under root, not only gists")
+    p.add_argument("--kind", action="append", help="keep only this kind (repeatable), e.g. feed")
+    p.add_argument("--save", action="store_true", help="write the catalog to data/catalog/links.jsonl")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_links)
+
+    p = sub.add_parser("feeds", help="read RSS/Atom feeds (default: feeds in the link catalog)")
+    p.add_argument("url", nargs="*")
+    p.add_argument("--save", action="store_true", help="store new items in the raw buffer")
+    p.add_argument("--items", dest="verbose_items", action="store_true", help="list new items")
+    add_output_flags(p)  # --json: {"feeds": [...], "items": [...]}; --urls: item links
+    p.set_defaults(func=cmd_feeds)
+
+    p = sub.add_parser("rfc", help="RFC Editor index: list, search, save")
+    p.add_argument("--search", nargs="+", help="words that must all appear in the entry")
+    p.add_argument("--number", type=int, action="append", help="show one RFC in full (repeatable)")
+    p.add_argument("--limit", type=int, default=20, help="newest N when not searching")
+    p.add_argument("--save", action="store_true", help="write data/catalog/rfc-index.jsonl")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_rfc)
+
+    p = sub.add_parser("blog", help="harvest articles of a blog as markdown (default: Apokryf)")
+    p.add_argument("url", nargs="?", default="https://blog.apokryf.pl")
+    p.add_argument("--limit", type=int)
+    p.add_argument("--dump", action="store_true", help="print articles in the notebook's dump format")
+    p.add_argument("--save", action="store_true", help="store articles in the raw buffer")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_blog)

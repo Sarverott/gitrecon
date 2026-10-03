@@ -32,7 +32,7 @@ jobs:
       head_sha: ${{ steps.pr.outputs.head_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Read PR
         id: pr
@@ -46,13 +46,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/pull/${{ needs.context.outputs.number }}/merge
           fetch-depth: 0
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.2.0  # no moving major tags since v8
 
       - name: Install tooling
         run: uv sync --frozen --no-default-groups --group delivery
@@ -69,12 +69,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/pull/${{ needs.context.outputs.number }}/merge
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.2.0  # no moving major tags since v8
 
       - name: Install package and test tools
         run: uv sync --frozen --no-default-groups --group test
@@ -92,7 +92,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Merge if allowed and start the next loop step
         env:
