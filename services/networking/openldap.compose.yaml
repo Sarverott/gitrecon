@@ -14,7 +14,3 @@ services:
     volumes:
       - openldap-data:/var/lib/ldap
       - openldap-config:/etc/ldap/slapd.d
-
-volumes:
-  openldap-data:
-  openldap-config:

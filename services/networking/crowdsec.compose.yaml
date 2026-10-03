@@ -10,8 +10,3 @@ services:
       - crowdsec-config:/etc/crowdsec
       - crowdsec-data:/var/lib/crowdsec/data
       - traefik-logs:/var/log/traefik:ro
-
-volumes:
-  crowdsec-config:
-  crowdsec-data:
-  traefik-logs:

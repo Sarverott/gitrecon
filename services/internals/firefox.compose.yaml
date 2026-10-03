@@ -13,6 +13,3 @@ services:
       - "${BIND:-127.0.0.1}:${FIREFOX_PORT:-5800}:5800"
     volumes:
       - firefox-config:/config
-
-volumes:
-  firefox-config:
