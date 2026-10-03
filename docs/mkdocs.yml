@@ -1,0 +1,111 @@
+# Built by Read the Docs (.readthedocs.yaml) and locally: `task docs:serve`.
+# The docs are a self-contained sub-project: config, uv project, lock and Taskfile live
+# here, next to the pages. Always build from the repository root: mkdocs build -f docs/mkdocs.yml
+site_name: gitrecon
+site_description: Exploring, mapping and labeling GitHub activity
+site_author: Sett Sarverott
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, "http://127.0.0.1:8000/"]
+repo_url: https://github.com/Sarverott/gitrecon
+repo_name: gitrecon
+edit_uri: edit/development/docs/   # docs are edited where code is: on development
+copyright: Copyright &copy; 2026 Sett Sarverott, MIT license
+
+docs_dir: .
+site_dir: ../site
+exclude_docs: |
+  /mkdocs.yml
+  /pyproject.toml
+  /uv.lock
+  /requirements.txt
+  /Taskfile.yml
+  /_mkdocs/
+  /.obsidian/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: red
+      accent: amber
+      toggle: { icon: material/weather-night, name: dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: red
+      accent: amber
+      toggle: { icon: material/weather-sunny, name: light mode }
+
+plugins:
+  - search
+
+hooks:
+  - _mkdocs/wikilinks.py   # Obsidian [[links]] → site links (docs/ is also an Obsidian vault)
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: README.md
+  - Guides:
+      - guides/installation.md
+      - guides/command-line.md
+      - guides/examples.md
+      - guides/collecting-activity.md
+      - guides/map-dataset.md
+      - guides/writing-a-label-rule.md
+      - guides/committing-and-releasing.md
+      - guides/documentation.md
+  - Glossary:
+      - glossary/README.md
+      - Collecting:
+          - glossary/event.md
+          - glossary/events-feed.md
+          - glossary/gh-archive.md
+          - glossary/star.md
+          - glossary/gist.md
+          - glossary/link-catalog.md
+          - glossary/news-feed.md
+          - glossary/rfc-index.md
+          - glossary/blog-article.md
+      - Storing:
+          - glossary/raw-buffer.md
+      - Recognizing:
+          - glossary/entity.md
+          - glossary/activity-graph.md
+          - glossary/label.md
+          - glossary/labeler.md
+          - glossary/rule.md
+          - glossary/threshold.md
+      - The map:
+          - glossary/atlas.md
+          - glossary/area.md
+          - glossary/dnstree.md
+          - glossary/ip-address-record.md
+          - glossary/host-union.md
+          - glossary/user-namespace.md
+          - glossary/identity.md
+      - Text:
+          - glossary/a12y.md
+          - glossary/word-chain.md
+          - glossary/rat-script.md
+      - Content:
+          - glossary/digest.md
+          - glossary/post-drafts.md
+      - Delivery:
+          - glossary/craft-loop.md
+          - glossary/metadata-sync.md
+          - glossary/routine.md

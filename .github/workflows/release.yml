@@ -1,0 +1,95 @@
+name: Build & Publish Release
+
+# Every loop through master is a release (pushed by a person, or dispatched by the loop's auto-merge):
+#   1. the version is bumped per .github/bos.config.json "versioning" (PATCH per loop, MINOR on a
+#      breaking change); metadata.json, manifests, lockfiles and CHANGELOG.md are updated,
+#      committed as "bump: ..." and tagged vX.Y.Z
+#   2. the bump commit and tag are pushed to master
+#   3. the Python wheel and sdist are built with that version and attached to a GitHub Release
+#   4. the loop continues: the PR master → development (back-merge) is opened
+#
+# Multi-line steps live in scripts/delegated/workflow-gh/release/, one script per step.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  HUSKY: '0'
+
+jobs:
+  guard:
+    name: Is There Something to Release?
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    outputs:
+      release: ${{ steps.released.outputs.release }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip if this commit is already released
+        id: released
+        run: scripts/delegated/workflow-gh/release/is-released.sh
+
+  build-and-release:
+    name: Build & Publish Release
+    needs: guard
+    if: needs.guard.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Bump version, changelog and tag
+        run: scripts/delegated/workflow-gh/release/bump.sh
+
+      - name: Push bump commit and tag
+        run: git push --follow-tags origin HEAD:master
+
+      - name: Build wheel and sdist
+        id: dist
+        run: scripts/delegated/workflow-gh/release/package-dist.sh
+
+      - name: Upload distributions as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitrecon-${{ env.TAG_NAME }}
+          path: dist/*
+
+      - name: Write release notes from CHANGELOG.md
+        run: scripts/delegated/workflow-gh/release/notes.sh
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: "Release ${{ env.TAG_NAME }}"
+          body_path: release_notes.md
+          files: dist/*
+          fail_on_unmatched_files: true
+          prerelease: ${{ startsWith(env.VERSION, '0.') }}
+
+      - name: Open back-merge PR master → development
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/bos/flow.py next-pr master

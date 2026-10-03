@@ -1,0 +1,48 @@
+{
+    "branches": {
+        "canonical": [
+            "master",
+            "development",
+            "revision",
+            "testing",
+            "releasing",
+            "rejection"
+        ],
+        "directions": {
+            "master": [
+                "development"
+            ],
+            "development": [
+                "revision",
+                "rejection"
+            ],
+            "revision": [
+                "testing",
+                "rejection"
+            ],
+            "testing": [
+                "releasing",
+                "rejection"
+            ],
+            "releasing": [
+                "master",
+                "rejection"
+            ],
+            "rejection": [
+                "development"
+            ]
+        },
+        "flags": {
+            "autocreate_loopedPR": true,
+            "automerge_loopedPR_m-d": false,
+            "automerge_loopedPR_d-r": true,
+            "automerge_loopedPR_r-t": true,
+            "automerge_loopedPR_t-r": true,
+            "automerge_loopedPR_r-m": true
+        }
+    },
+    "versioning": {
+        "loop": "PATCH",
+        "breaking": "MINOR"
+    }
+}

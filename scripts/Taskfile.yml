@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# Project scripts. Included by the root Taskfile as `scripts:`.
+
+version: '3'
+
+tasks:
+  sync:
+    desc: Copy shared info from metadata.json into package.json, pyproject.toml and lockfiles
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - uv run --quiet python scripts/sync_metadata.py
+
+  sync:check:
+    desc: Fail if package.json or pyproject.toml drifted from metadata.json
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - uv run --quiet python scripts/sync_metadata.py --check
+
+  lint:
+    desc: Check the delegated shell scripts with shellcheck
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh

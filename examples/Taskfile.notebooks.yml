@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# Shared tasks of one example, included (flattened) by examples/<title>/Taskfile.yml
+# with `dir: .`, so every task runs in that example's folder.
+
+version: '3'
+
+tasks:
+  launch:
+    desc: Open this example's notebooks in Jupyter
+    cmds:
+      - uv run jupyter notebook
+
+  run:
+    desc: Execute every notebook of this example headless; executed copies land in .out/
+    vars:
+      NOTEBOOKS:
+        sh: ls *.ipynb
+    cmds:
+      - for: { var: NOTEBOOKS }
+        cmd: uv run jupyter nbconvert --to notebook --execute {{.ITEM}} --output-dir .out
+
+  marimo:
+    desc: Convert every notebook of this example to a marimo app in marimo/
+    vars:
+      NOTEBOOKS:
+        sh: ls *.ipynb
+    cmds:
+      - mkdir -p marimo
+      - for: { var: NOTEBOOKS }
+        cmd: uv run marimo convert {{.ITEM}} -o marimo/{{trimSuffix ".ipynb" .ITEM}}.py
+
+  marimo:edit:
+    desc: Open the marimo versions of this example (run `task marimo` first)
+    cmds:
+      - uv run marimo edit marimo/
+
+  clean:
+    desc: Remove executed copies and outputs stored in the notebooks
+    cmds:
+      - rm -rf .out
+      - uv run jupyter nbconvert --clear-output --inplace *.ipynb
