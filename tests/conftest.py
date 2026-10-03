@@ -58,6 +58,12 @@ def no_network(monkeypatch):
     monkeypatch.setattr(requests.sessions.Session, "request", blocked)
 
 
+@pytest.fixture(autouse=True)
+def no_env_files(monkeypatch):
+    """Tests never read real dotenv files (no real tokens leak into them)."""
+    monkeypatch.setattr("gitrecon.config.env_files", lambda: [])
+
+
 @pytest.fixture
 def t0() -> datetime:
     return T0
