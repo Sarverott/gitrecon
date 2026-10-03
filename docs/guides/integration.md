@@ -31,6 +31,8 @@ gitrecon events org:github --watch --json | my-consumer   # JSON Lines, one even
 | --- | --- | --- |
 | `stars USER` | `[{user, repo, url, starred_at, language, stars, description, topics}]` | repositories |
 | `gists` | `[gist]` with `files`, `owner`, `url` | gists |
+| `gist-catalog USER` | `[{gistID, filelist, description, stars, comments, forks, commits, size, public, created_at, url}]` | gists |
+| `gist-clone USER PATH` | `[{gistID, path, status, error}]` (status: cloned, exists, updated, failed) | gists |
 | `events` | JSON Lines: `{id, type, action, actor, repo, org, created_at, url, payload}` | repositories of the events |
 | `archive` | `[{hour, source, path, bytes}]` | archive files on gharchive.org |
 | `links` | `[{url, kind, domain, found_in}]` | the links |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -21,6 +22,7 @@ class Response:
     etag: str | None
     poll_interval: int | None
     next_url: str | None
+    links: dict[str, dict[str, str]] | None = None
 
     @property
     def not_modified(self) -> bool:
@@ -95,7 +97,36 @@ class GitHubClient:
                 if "X-Poll-Interval" in r.headers
                 else None,
                 next_url=r.links.get("next", {}).get("url"),
+                links=dict(r.links),
             )
+
+    def graphql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Run a GraphQL query (needs a token); returns ``data``, raises on errors."""
+        if not self.config.github_token:
+            raise RuntimeError("GitHub GraphQL needs a token (GITHUB_TOKEN, GH_TOKEN or `gh auth login`)")
+        r = self.session.post(f"{self.config.api_url}/graphql", json={"query": query, "variables": variables or {}},
+                              timeout=60)
+        self.rate.update(r.headers)
+        r.raise_for_status()
+        body = r.json()
+        if body.get("errors"):
+            raise RuntimeError("; ".join(e.get("message", str(e)) for e in body["errors"]))
+        return body["data"]
+
+    def count(self, path: str) -> int:
+        """How many items a listing has.
+
+        One request when GitHub sends ``rel="last"`` (``per_page=1``: the last page number is
+        the count). Some listings - gist commits - only send ``rel="next"``; those are paged
+        through 100 at a time instead.
+        """
+        response = self.get(path, params={"per_page": 1})
+        links = response.links or {}
+        if match := re.search(r"[?&]page=(\d+)", links.get("last", {}).get("url", "")):
+            return int(match.group(1))
+        if "next" not in links:
+            return len(response.data or [])
+        return sum(1 for _ in self.paginate(path, max_pages=10**6))
 
     def paginate(
         self,

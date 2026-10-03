@@ -54,6 +54,49 @@ def cmd_gists(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_gist_catalog(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.gists import gist_catalog
+
+    catalog = gist_catalog(args.user, _client(config), privacy=args.privacy,
+                           with_commits=not args.no_commits)
+
+    def text(g: dict) -> str:
+        files = ", ".join(g["filelist"])[:48]
+        commits = "-" if g["commits"] is None else g["commits"]
+        lock = " " if g["public"] else "🔒"
+        return (f"{(g['created_at'] or '')[:10]} {lock} {g['gistID']}  *{g['stars']:<3} forks {g['forks']:<3} "
+                f"comments {g['comments']:<3} commits {commits!s:<4} {g['size'] / 1024:>8.1f} KiB  {files}")
+
+    def summary(items: list) -> str:
+        size = sum(g["size"] for g in items) / 2**20
+        return f"-- {len(items)} gists of {args.user} ({args.privacy}), {size:.1f} MiB of files"
+
+    out.listing(catalog, text=text, data=lambda g: g, url=lambda g: g["url"], summary=summary)
+    return 0
+
+
+def cmd_gist_clone(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.gists import clone_gists, gist_catalog
+
+    catalog = gist_catalog(args.user, _client(config), privacy=args.privacy, with_commits=False)
+    chosen = catalog[: args.limit] if args.limit else catalog
+    size = sum(g["size"] for g in chosen) / 2**20
+    if args.dry_run:
+        out.listing(chosen, text=lambda g: f"would clone {g['gistID']}  {g['size'] / 1024:>8.1f} KiB  "
+                                           f"{', '.join(g['filelist'])[:50]}",
+                    data=lambda g: g, url=lambda g: g["url"],
+                    summary=f"-- {len(chosen)} of {len(catalog)} gists, {size:.1f} MiB of files (plus history) "
+                            f"-> {Path(args.path).expanduser()}")
+        return 0
+    out.note(f"cloning {len(chosen)} of {len(catalog)} gists ({size:.1f} MiB of files) into {args.path}")
+    results = clone_gists(chosen, args.path, update=args.update, progress=out.note if not out.machine else None)
+    failed = [r for r in results if r["status"] == "failed"]
+    out.listing(results, text=lambda r: f"{r['status']:<8} {r['gistID']}" + (f"  {r['error']}" if r["error"] else ""),
+                data=lambda r: r, url=lambda r: f"https://gist.github.com/{r['gistID']}",
+                summary=f"-- {len(results) - len(failed)} ok, {len(failed)} failed")
+    return 1 if failed else 0
+
+
 def cmd_stars(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.sources import stars
 
@@ -210,6 +253,24 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--pages", type=int, default=3)
     add_output_flags(p)
     p.set_defaults(func=cmd_gists)
+
+    p = sub.add_parser("gist-catalog", help="every gist of a user: files, stars, comments, forks, commits, size")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    p.add_argument("--privacy", choices=["public", "all", "secret"], default="public",
+                   help="all/secret need that user's own token")
+    p.add_argument("--no-commits", action="store_true", help="skip counting commits (one request per gist)")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_gist_catalog)
+
+    p = sub.add_parser("gist-clone", help="clone a user's gists into PATH/<gistID>, as they are")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    p.add_argument("path", help="where the clones go (created when missing), e.g. ~/__WORKSHOP/forge/sarverott/my-gists")
+    p.add_argument("--privacy", choices=["public", "all", "secret"], default="public")
+    p.add_argument("--limit", type=int, help="only the first N (oldest first)")
+    p.add_argument("--update", action="store_true", help="fast-forward clones that exist already")
+    p.add_argument("--dry-run", action="store_true", help="list what would be cloned and its size, clone nothing")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_gist_clone)
 
     p = sub.add_parser("stars", help="list repositories starred by a user")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")
