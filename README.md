@@ -35,6 +35,10 @@ gitrecon archive 2026-10-01-0 2026-10-01-23   # GH Archive hours (UTC), streamed
 
 gitrecon stars sarverott            # every repository a user has starred (--save keeps them)
 gitrecon stars sarverott --urls     # ...just their addresses, one per line
+gitrecon stars sarverott --json > sarverott-stars.json      # ...or all of it as a JSON file
+gitrecon gist-catalog sarverott     # every gist: files, stars, comments, forks, commits, size
+gitrecon repos sarverott --no-forks # own repositories; orgs sarverott; org-repos ORG
+gitrecon repo-clone sarverott ~/__WORKSHOP/forge/sarverott/repos --dry-run   # also gist-clone, org-clone
 gitrecon links ..                   # harvest data source links from gist clones in ..
 gitrecon links .. --kind feed --save
 

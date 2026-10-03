@@ -15,6 +15,28 @@ from gitrecon.config import Config
 log = logging.getLogger(__name__)
 
 
+SECONDARY_RETRIES = 3
+SECONDARY_WAIT = 60  # seconds, when GitHub sends no Retry-After
+
+
+def _forbids_classic_token(r: requests.Response) -> bool:
+    try:
+        message = (r.json() or {}).get("message", "")
+    except ValueError:
+        return False
+    return "forbids access via a personal access token (classic)" in message
+
+
+def _is_secondary_limit(r: requests.Response) -> bool:
+    if "Retry-After" in r.headers:
+        return True
+    try:
+        message = (r.json() or {}).get("message", "")
+    except ValueError:
+        return False
+    return "secondary rate limit" in message.lower() or "abuse" in message.lower()
+
+
 @dataclass
 class Response:
     status: int
@@ -52,6 +74,7 @@ class RateLimit:
 class GitHubClient:
     config: Config = field(default_factory=Config)
     wait_on_limit: bool = True
+    anonymous_fallbacks: int = 0  # requests repeated without the token (orgs refusing classic tokens)
     rate: RateLimit = field(default_factory=RateLimit)
     session: requests.Session = field(default_factory=lambda: requests.Session())
 
@@ -77,6 +100,7 @@ class GitHubClient:
         headers = {"If-None-Match": etag} if etag else {}
         if accept:
             headers["Accept"] = accept
+        secondary_retries = 0
         while True:
             r = self.session.get(url, params=params, headers=headers, timeout=60)
             self.rate.update(r.headers)
@@ -86,6 +110,22 @@ class GitHubClient:
                     raise RuntimeError(f"GitHub rate limit exhausted, resets in {wait:.0f}s")
                 log.warning("rate limit exhausted, sleeping %.0fs", wait)
                 time.sleep(wait)
+                continue
+            if r.status_code in (403, 429) and secondary_retries < SECONDARY_RETRIES and _is_secondary_limit(r):
+                # too many requests too fast: GitHub asks to wait (Retry-After) even with quota left
+                secondary_retries += 1
+                wait = float(r.headers.get("Retry-After") or SECONDARY_WAIT)
+                if not self.wait_on_limit:
+                    raise RuntimeError(f"GitHub secondary rate limit, retry in {wait:.0f}s")
+                log.warning("secondary rate limit, sleeping %.0fs (attempt %d)", wait, secondary_retries)
+                time.sleep(wait)
+                continue
+            if r.status_code == 403 and "Authorization" not in headers and _forbids_classic_token(r):
+                # an organization that refuses classic tokens still shows its public data anonymously
+                log.warning("%s refuses classic tokens - retrying without one (public data only)",
+                            url.split("?")[0])
+                headers["Authorization"] = None  # None drops the session's header for this request
+                self.anonymous_fallbacks += 1
                 continue
             if r.status_code != 304:
                 r.raise_for_status()
