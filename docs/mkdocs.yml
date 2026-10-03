@@ -72,6 +72,8 @@ nav:
       - guides/writing-a-label-rule.md
       - guides/committing-and-releasing.md
       - guides/documentation.md
+  - Devlog:
+      - devlog/scrapnote-1791014945204.md
   - Glossary:
       - glossary/README.md
       - Collecting:

@@ -24,6 +24,11 @@ findings into a shared map dataset, and can draft articles from summaries of the
 | [[committing-and-releasing]] | commits, the craft loop, releases |
 | [[documentation]] | these docs: Obsidian, MkDocs, Read the Docs, `task manuals` |
 
+## Devlog
+
+Scrapnotes written along the way, newest last: `devlog/scrapnote-<UNIXUSAT>.md`
+(UNIXUSAT = epoch milliseconds, `Date.now()`).
+
 ## Glossary
 
 Every element of gitrecon, one page each: [glossary](glossary/README.md).
