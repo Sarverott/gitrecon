@@ -1,23 +1,25 @@
 {
-  "name": "gistrecon",
+  "name": "gitrecon",
   "version": "1.0.0",
-  "description": "toolset to discovery new gists on github",
+  "description": "exploring, mapping and labeling GitHub activity",
   "keywords": [
-    "gist"
+    "gist",
+    "github",
+    "recon",
+    "osint"
   ],
   "repository": {
     "type": "git",
-    "url": "x"
+    "url": "https://github.com/Sarverott/gitrecon.git"
   },
   "license": "MIT",
   "author": "Sett Sarverott",
   "type": "commonjs",
-  "main": "src/gistrecon-js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "tast tast",
+    "test": "uv run pytest",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -215,3 +215,6 @@ dmypy.json
 # REFNOTE: by casting spell `bash git python,node,GitBook,GitHubPages,c,cmake,c++,rust` for https://github.com/Sarverott/gitrecon.git with  [UNIXUSAT=1774206493607]
 # REFNOTE: best regards and with goodluck charm casting
 # REFNOTE:    ~Apokryf Institute of Technomantic Research
+
+# gitrecon raw buffer and feed state
+/data/

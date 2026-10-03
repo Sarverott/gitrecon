@@ -2,18 +2,39 @@
 
 version: '3'
 
-vars:
-  GREETING: Hello, World!
-
 tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  install:
+    desc: install all dependencies
+    cmds:
+      - uv sync
+
+  test:
+    desc: run offline test suite
+    cmds:
+      - uv run pytest {{.CLI_ARGS}}
+
+  recon:
+    desc: run gitrecon CLI, e.g. `task recon -- events org:github`
+    cmds:
+      - uv run gitrecon {{.CLI_ARGS}}
+
+  listen:
+    desc: keep listening on a feed, e.g. `task listen -- org:github`
+    cmds:
+      - uv run gitrecon events {{.CLI_ARGS}} --watch
+
   nb_to_marimo:
+    desc: convert legacy notebooks to marimo scripts in tools/
     cmds:
       - uv run marimo convert datasets/setups.ipynb > tools/datasets_setups.py
       - uv run marimo convert docs/tests-with-md-parsing-and-rattish-implementations.ipynb > tools/draft-tests.py
+
   lounch_notes:
+    desc: start jupyter notebook
     cmds:
       - uv run python -m notebook
-  default:
-    cmds:
-      - echo "{{.GREETING}}"
-    silent: true
