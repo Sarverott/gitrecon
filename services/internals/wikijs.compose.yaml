@@ -1,0 +1,18 @@
+# Wiki.js - the workshop's wiki: notes and findings worth publishing internally.
+services:
+  wikijs:
+    image: ghcr.io/requarks/wiki:2
+    profiles: [internals, wikijs]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: wikijs
+      DB_PASS: ${POSTGRES_PASSWORD:-gitrecon}
+      DB_NAME: wikijs
+    ports:
+      - "${BIND:-127.0.0.1}:${WIKIJS_PORT:-3001}:3000"

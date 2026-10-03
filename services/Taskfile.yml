@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# The services of services/<group>/ (docker compose). Included by the root Taskfile as `services:`.
+# Targets are services or whole groups; their dependencies come along (services/control.py).
+
+version: '3'
+
+vars:
+  CONTROL: uv run --quiet python {{.TASKFILE_DIR}}/control.py
+
+tasks:
+  list:
+    desc: Every service by group, with image, published ports and dependencies
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} list'
+
+  up:
+    desc: 'Start services or groups with their dependencies, e.g. task services:up -- databases n8n'
+    dir: '{{.TASKFILE_DIR}}/..'
+    dotenv: ['.env', '../../.env']   # TODO: forge .env is a temporary home for tokens
+    cmds:
+      - '{{.CONTROL}} up {{.CLI_ARGS}}'
+
+  down:
+    desc: Stop every running service (volumes - the data - stay)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} down'
+
+  ps:
+    desc: What is running
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} ps'
+
+  logs:
+    desc: 'Follow the logs of services, e.g. task services:logs -- gitea'
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} logs {{.CLI_ARGS}}'
+    interactive: true
+
+  pull:
+    desc: 'Pull images of services or groups (all when none given), e.g. task services:pull -- databases'
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} pull {{.CLI_ARGS}}'
+
+  runner:versions:
+    desc: Print the latest GitHub runner version and checksum, for services/runners/github-runner/Dockerfile
+    cmds:
+      - gh api repos/actions/runner/releases/latest --jq '"RUNNER_VERSION=\(.tag_name | ltrimstr("v"))\nRUNNER_SHA256=\(.body | capture("<!-- BEGIN SHA linux-x64 -->(?<s>[0-9a-f]+)<!-- END SHA linux-x64 -->").s)"'

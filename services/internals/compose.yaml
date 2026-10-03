@@ -1,0 +1,8 @@
+# Internal tools of the workshop: code hosting, local models, images, search, browsing, wiki.
+include:
+  - ./gitea.compose.yaml
+  - ./ollama.compose.yaml
+  - ./registry.compose.yaml
+  - ./searxng.compose.yaml
+  - ./firefox.compose.yaml
+  - ./wikijs.compose.yaml
