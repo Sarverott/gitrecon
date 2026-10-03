@@ -1,6 +1,7 @@
 """Markdown fetching and rendering.
 
-Deconstructed from ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+Deconstructed from the first notebook, ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+(removed, see git history; demo: ``examples/text-experiments``)
 (cells 1-5 and 11).
 """
 

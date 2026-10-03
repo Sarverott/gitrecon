@@ -43,7 +43,7 @@ gitrecon atlas update               # gist links -> dnstrees, GitHub /meta -> ip
 gitrecon atlas update --stars sarverott   # + user-namespace: owners of starred repos
 gitrecon atlas status
 gitrecon atlas push -m "message"    # HF_TOKEN from .env; --pr to open a Hub PR
-uv run python examples/push_map.py --stars sarverott -m "message"   # the whole refresh + push
+task map:refresh && task map:push -- -m "message"          # the whole refresh + push
 
 # content: summarize locally, then write drafts
 gitrecon digest stars:sarverott     # Ollama map-reduce; also labels | links | file:PATH
@@ -78,6 +78,14 @@ by source and UTC hour.
 | `mass-gist-drop` | user | many gists created within one window |
 
 Thresholds live in `gitrecon.analysis.Thresholds`.
+
+## Examples and documentation
+
+- `examples/<title>/` - runnable Jupyter notebooks with concrete calls (`task examples:list`,
+  `task examples:launch`, `task examples:marimo`); see [examples/README.md](examples/README.md)
+- `docs/` - guides and a glossary (an Obsidian vault, built with MkDocs on Read the Docs):
+  `task manuals` reads them in the terminal, `task docs:serve` previews the site
+- `task help` lists every task
 
 ## Development
 

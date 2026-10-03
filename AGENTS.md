@@ -42,7 +42,14 @@ src/gitrecon/
 - **user-namespace**: follows `datasets/imperialmap/user-namespace/README.md` —
   `NS/<a12y(user)>/<a12y(platform)>/<md5("user@platform\n")>.json` + `index.json`.
   Only public platform accounts are added automatically; no e-mail harvesting.
-- **example**: `examples/push_map.py` runs the whole map refresh and push via the library.
+- **examples**: `examples/<title>/notebook.ipynb` or `examples/<title>/<NN-chapter>.ipynb`,
+  each folder with `README.md` and `Taskfile.yml` (includes `examples/Taskfile.notebooks.yml`:
+  launch, run, marimo, clean). Notebooks are committed without outputs; `.out/` and `marimo/`
+  are generated. Anything publishing (map push) stays behind an explicit flag.
+- **docs**: `docs/` is an Obsidian vault and a MkDocs sub-project (own `pyproject.toml`, built
+  by Read the Docs from `.readthedocs.yaml`): `glossary/` one page per element, `guides/`.
+  New element → glossary page + `glossary/README.md` + `mkdocs.yml` nav. `task docs:build`
+  must pass (`--strict`). `task manuals` reads the docs in the terminal.
 
 ## Delivery (ported from shakespeare-mobile)
 
@@ -59,9 +66,9 @@ src/gitrecon/
 - Tests are offline; `tests/conftest.py` blocks real HTTP. Use `FakeSession`.
 - Work on `development` (or `feature/*`, `fix/*`), never directly on `master`.
   Commit messages follow Conventional Commits (`task commit`).
-- Legacy notebooks (`docs/*.ipynb`, `datasets/*.ipynb`) and their marimo
-  conversions (`tools/*.py`) are kept as originals; the code lives in `src/gitrecon/`.
-  `tests/fixtures/taskfile-llms.*` pins the RAT output to the original notebook.
+- The first notebooks (`docs/*.ipynb`, `datasets/setups.ipynb`, `tools/*.py`, root `main.py`)
+  were fully assimilated into `src/gitrecon/` and `examples/`, then removed (see git history).
+  `tests/fixtures/taskfile-llms.*` still pins the RAT output to the first notebook.
 - Data goes to `data/` and the map to `datasets/imperialmap/` (both git-ignored).
 - Pushing the map to Hugging Face and publishing posts are outward-facing: confirm first.
 - Respect GitHub rate limits and the Acceptable Use Policies; do not build profiles

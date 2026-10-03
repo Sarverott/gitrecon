@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# All examples at once. Included by the root Taskfile as `examples:`.
+# One example: cd examples/<title> && task --list
+
+version: '3'
+
+vars:
+  EXAMPLES:
+    sh: find {{.TASKFILE_DIR}} -mindepth 2 -maxdepth 2 -name Taskfile.yml -printf '%h\n' | xargs -n1 basename | sort
+
+tasks:
+  list:
+    desc: List examples with their notebooks
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - for: { var: EXAMPLES }
+        cmd: 'echo "{{.ITEM}}: $(cd {{.ITEM}} && ls *.ipynb | tr "\n" " ")"'
+    silent: true
+
+  launch:
+    desc: Open Jupyter on all examples
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - uv run jupyter notebook
+
+  run:
+    desc: 'Execute examples headless, all or the ones named, e.g. task examples:run -- getting-started'
+    dir: '{{.TASKFILE_DIR}}'
+    vars:
+      TARGETS: '{{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{.EXAMPLES}}{{end}}'
+    cmds:
+      - for: { var: TARGETS }
+        cmd: task -d {{.ITEM}} run
+
+  marimo:
+    desc: Convert every example notebook to marimo (examples/<title>/marimo/*.py)
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - for: { var: EXAMPLES }
+        cmd: task -d {{.ITEM}} marimo
+
+  clean:
+    desc: Clear outputs and executed copies of every example
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - for: { var: EXAMPLES }
+        cmd: task -d {{.ITEM}} clean

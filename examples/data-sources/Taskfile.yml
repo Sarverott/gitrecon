@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# This example's tasks: task launch | run | marimo | marimo:edit | clean
+
+version: '3'
+
+includes:
+  notebooks:
+    taskfile: ../Taskfile.notebooks.yml
+    dir: .
+    flatten: true
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true

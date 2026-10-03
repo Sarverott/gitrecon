@@ -1,6 +1,7 @@
 """Hugging Face Hub dataset sync for the map (``Apokryf/minimap-of-uce``).
 
-Deconstructed from ``datasets/setups.ipynb``. The notebook ran from ``datasets/``,
+Deconstructed from ``datasets/setups.ipynb`` (removed, see git history; demo:
+``examples/map-dataset``). The notebook ran from ``datasets/``,
 so its ``./imperialmap`` is ``<project>/datasets/imperialmap`` - now resolved from
 the project root (override with ``GITRECON_DATASETS``), not from the working dir.
 

@@ -1,6 +1,7 @@
 """RAT ("rattish") script builder: glossary section + sentence rebuild section.
 
-Deconstructed from ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+Deconstructed from the first notebook, ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+(removed, see git history; demo: ``examples/text-experiments``)
 (cell 7). Output is byte-identical to the notebook for the same input.
 """
 

@@ -4,7 +4,8 @@
 (``cross`` -> ``c5s``, ``codes`` -> ``c5s1``). Words not bounded by ASCII
 letters get a hex form ``0-<first>-<len>-<last>``.
 
-Deconstructed from ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+Deconstructed from the first notebook, ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+(removed, see git history; demo: ``examples/text-experiments``)
 (cell 7). The module-level ``glossary`` global became :class:`Glossary`.
 """
 

@@ -7,12 +7,29 @@ includes:
   scripts: ./scripts/Taskfile.yml
   gh: ./.github/Taskfile.yml
   hooks: ./.husky/Taskfile.yml
+  examples: ./examples/Taskfile.yml
+  docs: ./docs/Taskfile.yml
 
 tasks:
   default:
     cmds:
-      - task --list
+      - task: help
     silent: true
+
+  help:
+    desc: List every task, and where to read more
+    cmds:
+      - task --list
+      - echo ""
+      - 'echo "Manuals: task manuals lists the documentation in docs/ (guides, glossary);"'
+      - 'echo "         task manuals -- <page> reads one, e.g. task manuals -- user-namespace"'
+    silent: true
+
+  manuals:
+    desc: 'Read the markdown docs in docs/ in the terminal, e.g. task manuals -- map-dataset'
+    cmds:
+      - uv run --quiet python scripts/manuals.py {{.CLI_ARGS}}
+    interactive: true
 
   install:
     desc: Install uv dependencies and the git hooks (husky)
@@ -70,14 +87,3 @@ tasks:
     desc: 'Push the map to Hugging Face, e.g. task map:push -- -m "dnstrees from gists"'
     cmds:
       - uv run gitrecon atlas push {{.CLI_ARGS}}
-
-  nb_to_marimo:
-    desc: Convert legacy notebooks to marimo scripts in tools/
-    cmds:
-      - uv run marimo convert datasets/setups.ipynb > tools/datasets_setups.py
-      - uv run marimo convert docs/tests-with-md-parsing-and-rattish-implementations.ipynb > tools/draft-tests.py
-
-  lounch_notes:
-    desc: Start jupyter notebook
-    cmds:
-      - uv run python -m notebook
