@@ -15,6 +15,8 @@ addresses, one per line) - see [[integration]] for the shapes. Example:
 | `gitrecon archive 2026-10-01-0 [2026-10-01-23]` | download [[gh-archive]] hours |
 | `gitrecon gists [--user X]` | newest public gists, or one user's |
 | `gitrecon stars USER [--json] [--save]` | repositories a user has starred ([[star]]) |
+| `gitrecon gist-catalog USER [--privacy all]` | every [[gist]] of a user: files, stars, comments, forks, commits, size |
+| `gitrecon gist-clone USER PATH [--limit N] [--dry-run] [--update]` | clone them as they are into `PATH/<gistID>` |
 | `gitrecon links [ROOT] [--kind feed] [--save]` | harvest the [[link-catalog]] from gist clones |
 | `gitrecon feeds [URL...] [--items] [--save]` | read [[news-feed]]s (default: from the catalog) |
 | `gitrecon rfc [--search W...] [--number N] [--save]` | the [[rfc-index]] |
