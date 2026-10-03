@@ -1,28 +1,33 @@
 {
   "name": "gitrecon",
-  "version": "1.0.0",
-  "description": "exploring, mapping and labeling GitHub activity",
+  "version": "0.1.0",
+  "description": "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects",
   "keywords": [
-    "gist",
     "github",
     "recon",
-    "osint"
+    "osint",
+    "gist",
+    "data-mining"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Sarverott/gitrecon.git"
+    "url": "git+https://github.com/Sarverott/gitrecon.git"
   },
   "license": "MIT",
-  "author": "Sett Sarverott",
+  "author": "Sett Sarverott A.A.B. <sett@sarverott.com> (https://sett.sarverott.com)",
   "type": "commonjs",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "uv run pytest",
+    "test": "task test",
     "prepare": "husky"
   },
   "devDependencies": {
     "husky": "^9.1.7"
+  },
+  "homepage": "https://github.com/Sarverott/gitrecon#readme",
+  "bugs": {
+    "url": "https://github.com/Sarverott/gitrecon/issues"
   }
 }

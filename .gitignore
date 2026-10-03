@@ -164,7 +164,6 @@ Mkfile.old
 build/Release
 *.mod
 jspm_packages/
-dist/
 lerna-debug.log*
 *.hex
 **/.vitepress/cache
@@ -218,3 +217,4 @@ dmypy.json
 
 # gitrecon raw buffer and feed state
 /data/
+release_notes.md

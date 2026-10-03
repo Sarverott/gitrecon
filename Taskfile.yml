@@ -1,6 +1,12 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
 # https://taskfile.dev
 
 version: '3'
+
+includes:
+  scripts: ./scripts/Taskfile.yml
+  gh: ./.github/Taskfile.yml
+  hooks: ./.husky/Taskfile.yml
 
 tasks:
   default:
@@ -9,32 +15,69 @@ tasks:
     silent: true
 
   install:
-    desc: install all dependencies
+    desc: Install uv dependencies and the git hooks (husky)
     cmds:
       - uv sync
+      - npm install
 
   test:
-    desc: run offline test suite
+    desc: Run the offline test suite and the metadata sync check
     cmds:
       - uv run pytest {{.CLI_ARGS}}
+      - task: scripts:sync:check
+
+  lint:
+    desc: Lint workflows and delegated scripts
+    cmds:
+      - task: gh:lint
+      - task: scripts:lint
+
+  sync:
+    desc: Copy shared info from metadata.json into package.json, pyproject.toml and lockfiles
+    cmds:
+      - task: scripts:sync
+
+  commit:
+    desc: Commit with commitizen (conventional message prompt); routines from .husky/bos.config.json apply
+    interactive: true
+    cmds:
+      - task: hooks:routine:add-all
+      - uv run cz commit
+
+  bump:
+    desc: Bump version, changelog and tag (CI does this on every merge into master, don't run it by hand there)
+    cmds:
+      - uv run cz bump {{.CLI_ARGS}}
 
   recon:
-    desc: run gitrecon CLI, e.g. `task recon -- events org:github`
+    desc: Run the gitrecon CLI, e.g. `task recon -- stars sarverott`
     cmds:
       - uv run gitrecon {{.CLI_ARGS}}
 
   listen:
-    desc: keep listening on a feed, e.g. `task listen -- org:github`
+    desc: Keep listening on a feed, e.g. `task listen -- org:github`
     cmds:
       - uv run gitrecon events {{.CLI_ARGS}} --watch
 
+  map:refresh:
+    desc: Pull the map dataset, harvest gist links and write findings into it (no push)
+    cmds:
+      - uv run gitrecon atlas pull
+      - uv run gitrecon links --save
+      - uv run gitrecon atlas update
+
+  map:push:
+    desc: 'Push the map to Hugging Face, e.g. task map:push -- -m "dnstrees from gists"'
+    cmds:
+      - uv run gitrecon atlas push {{.CLI_ARGS}}
+
   nb_to_marimo:
-    desc: convert legacy notebooks to marimo scripts in tools/
+    desc: Convert legacy notebooks to marimo scripts in tools/
     cmds:
       - uv run marimo convert datasets/setups.ipynb > tools/datasets_setups.py
       - uv run marimo convert docs/tests-with-md-parsing-and-rattish-implementations.ipynb > tools/draft-tests.py
 
   lounch_notes:
-    desc: start jupyter notebook
+    desc: Start jupyter notebook
     cmds:
       - uv run python -m notebook

@@ -1,1 +1,1 @@
-npm test
+uv run --quiet task hooks:pre-commit

@@ -8,6 +8,7 @@ from gitrecon.models.organization import Organization
 from gitrecon.models.project import Project
 from gitrecon.models.records import from_record
 from gitrecon.models.repository import Repository
+from gitrecon.models.star import Star
 from gitrecon.models.user import User
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "Organization",
     "Project",
     "Repository",
+    "Star",
     "User",
     "from_record",
 ]

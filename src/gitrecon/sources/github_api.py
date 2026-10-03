@@ -51,7 +51,7 @@ class GitHubClient:
     config: Config = field(default_factory=Config)
     wait_on_limit: bool = True
     rate: RateLimit = field(default_factory=RateLimit)
-    session: requests.Session = field(default_factory=requests.Session)
+    session: requests.Session = field(default_factory=lambda: requests.Session())
 
     def __post_init__(self) -> None:
         self.session.headers.update(
@@ -69,9 +69,12 @@ class GitHubClient:
         path_or_url: str,
         params: dict[str, Any] | None = None,
         etag: str | None = None,
+        accept: str | None = None,
     ) -> Response:
         url = path_or_url if path_or_url.startswith("http") else self.config.api_url + path_or_url
         headers = {"If-None-Match": etag} if etag else {}
+        if accept:
+            headers["Accept"] = accept
         while True:
             r = self.session.get(url, params=params, headers=headers, timeout=60)
             self.rate.update(r.headers)
@@ -94,14 +97,20 @@ class GitHubClient:
                 next_url=r.links.get("next", {}).get("url"),
             )
 
-    def paginate(self, path: str, params: dict[str, Any] | None = None, max_pages: int = 10):
+    def paginate(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        max_pages: int = 10,
+        accept: str | None = None,
+    ):
         """Yield items across ``Link: rel=next`` pages."""
         params = {"per_page": 100, **(params or {})}
         url: str | None = path
         for _ in range(max_pages):
             if not url:
                 return
-            response = self.get(url, params=params)
+            response = self.get(url, params=params, accept=accept)
             params = None  # next_url already carries the query
             yield from response.data or []
             url = response.next_url

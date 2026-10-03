@@ -5,7 +5,9 @@ description = "Exploring, mapping and labeling GitHub activity of users, organiz
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
-authors = [{ name = "Sett Sarverott", email = "sarverott@gmail.com" }]
+authors = [
+    {name = "Sett Sarverott A.A.B.", email = "sett@sarverott.com"},
+]
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "darkpoint>=0.2.0",
@@ -17,9 +19,15 @@ dependencies = [
     "requests>=2.32.5",
     "toml>=0.10.2",
 ]
+keywords = ["github", "recon", "osint", "gist", "data-mining"]
 
 [project.scripts]
 gitrecon = "gitrecon.main:main"
+
+[project.urls]
+Homepage = "https://github.com/Sarverott/gitrecon"
+Repository = "https://github.com/Sarverott/gitrecon"
+Issues = "https://github.com/Sarverott/gitrecon/issues"
 
 [build-system]
 requires = ["uv_build>=0.9,<0.13"]
@@ -31,10 +39,17 @@ addopts = "-q"
 
 [dependency-groups]
 test = ["pytest>=9.1.1"]
+delivery = [
+    "actionlint-py>=1.7.12.25",
+    "commitizen>=4.19.0",
+    "go-task-bin>=3.53.1",
+    "shellcheck-py>=0.11.0.1",
+    "tomlkit>=0.15.1",
+]
 dev = [
     { include-group = "test" },
+    { include-group = "delivery" },
     "chromadb>=1.5.5",
-    "commitizen>=4.19.0",
     "datasets>=4.8.3",
     "docker>=7.1.0",
     "huggingface-hub>=1.7.2",
@@ -50,5 +65,13 @@ dev = [
     "tokenizers>=0.22.2",
     "tox>=4.64.7",
     "transformers>=5.3.0",
-    "xai>=0.3.0",
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "uv"
+version_files = ['metadata.json:"version"', "src/gitrecon/__init__.py:__version__"]
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true
+pre_bump_hooks = ["task sync"]
