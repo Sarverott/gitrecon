@@ -63,6 +63,7 @@ nav:
   - Guides:
       - guides/installation.md
       - guides/command-line.md
+      - guides/integration.md
       - guides/examples.md
       - guides/collecting-activity.md
       - guides/map-dataset.md
@@ -105,6 +106,8 @@ nav:
       - Content:
           - glossary/digest.md
           - glossary/post-drafts.md
+      - Interfaces:
+          - glossary/output-mode.md
       - Delivery:
           - glossary/craft-loop.md
           - glossary/metadata-sync.md

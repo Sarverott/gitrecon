@@ -17,6 +17,8 @@ Secrets can also live in a dotenv file: `GITRECON_ENV_FILE`, the project `.env`,
 or (for now) `__WORKSHOP/forge/.env` - existing variables always win.
 LLM interfaces (Ollama, OpenAI-compatible enterprise endpoints) are on hold: TODO.
 
+Or in a container: `task docker:run -- stars sarverott` (see `docs/guides/installation.md`).
+
 ## Usage
 
 ```sh
@@ -28,7 +30,8 @@ gitrecon gists                      # newest public gists
 gitrecon gists --user octocat
 gitrecon archive 2026-10-01-0 2026-10-01-23   # GH Archive hours (UTC), streamed to disk
 
-gitrecon stars sarverott            # every repository a user has starred (--json, --save)
+gitrecon stars sarverott            # every repository a user has starred (--save keeps them)
+gitrecon stars sarverott --urls     # ...just their addresses, one per line
 gitrecon links ..                   # harvest data source links from gist clones in ..
 gitrecon links .. --kind feed --save
 
@@ -49,12 +52,16 @@ task map:refresh && task map:push -- -m "message"          # the whole refresh +
 gitrecon digest stars:sarverott     # Ollama map-reduce; also labels | links | file:PATH
 gitrecon posts data/digests/<file>.md   # xAI: SEO article, tweet thread, LinkedIn, Mastodon
 
+# for programs: most commands take --json (only data on stdout) or --urls (only addresses)
+gitrecon stars sarverott --json | jq '.[].url'
+gitrecon events org:github --watch --json      # JSON Lines, live
+gitrecon label --name star-burst --urls
+
 # look
 gitrecon status                     # what is in the raw buffer
 gitrecon map                        # graph summary: nodes, relations, hubs
 gitrecon map --node user:octocat    # neighbors of one entity
 gitrecon label                      # labels with confidence and evidence
-gitrecon label --json
 
 # text experiments
 gitrecon text toc|tokens|rat [URL]

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from gitrecon.models.base import Entity, parse_time
+from gitrecon.models.base import GITHUB, Entity, parse_time
 
 
 @dataclass
@@ -30,6 +30,14 @@ class User(Entity):
     @property
     def ident(self) -> str:
         return self.login.lower()
+
+    @property
+    def html_url(self) -> str:
+        if self.raw.get("html_url"):
+            return self.raw["html_url"]
+        if self.login.endswith("[bot]"):  # bots are GitHub Apps
+            return f"{GITHUB}/apps/{self.login.removesuffix('[bot]')}"
+        return f"{GITHUB}/{self.login}"
 
     @property
     def is_bot(self) -> bool:

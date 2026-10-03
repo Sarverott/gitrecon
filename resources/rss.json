@@ -1,0 +1,10 @@
+{
+    "ExploitDB":[
+        "https://www.exploit-db.com/rss.xml",
+        "public open exploit database"
+    ],
+    "Sekurak":[
+        "https://feeds.feedburner.com/sekurak",
+        "polish portal oriented on technical cybersecurity news"
+    ]
+}

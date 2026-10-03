@@ -9,6 +9,7 @@ findings into a shared map dataset, and can draft articles from summaries of the
 
 - [[installation]] - setup and credentials
 - [[command-line]] - every command, grouped by what it does
+- [[integration]] - `--json` / `--urls`, and gitrecon inside other programs
 - [[examples]] - runnable notebooks (`examples/<title>/`)
 
 ## Guides

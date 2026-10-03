@@ -22,6 +22,23 @@ class Star(Entity):
     def ident(self) -> str:
         return f"{self.user.lower()}->{self.repo.ident}"
 
+    @property
+    def html_url(self) -> str:
+        return self.repo.html_url
+
+    def to_json(self) -> dict[str, Any]:
+        """Flat: one starred repository per object (``repo`` is ``owner/name``)."""
+        return {
+            "user": self.user,
+            "repo": self.repo.full_name,
+            "url": self.html_url,
+            "starred_at": self.starred_at.isoformat() if self.starred_at else None,
+            "language": self.repo.language,
+            "stars": self.repo.stargazers_count,
+            "description": self.repo.description,
+            "topics": self.repo.topics or [],
+        }
+
     @classmethod
     def from_api(cls, user: str, data: dict[str, Any]) -> Star:
         """Accepts ``/users/{u}/starred`` items, plain or ``star+json`` (``{starred_at, repo}``)."""

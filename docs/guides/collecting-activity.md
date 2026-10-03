@@ -12,7 +12,8 @@
    relations and hubs; `gitrecon map --node user:octocat` for one entity's neighbours.
 
 3. **Conclude**: `gitrecon label`. Each [[label]] names its target, confidence and the
-   events behind it (`--json` for the evidence ids).
+   events behind it (`--json` for the evidence ids, `--urls` for the pages of the labeled
+   entities, `--name star-burst` for one kind).
 
 Everything downstream of the buffer is rebuilt on every run, so new [[rule]]s and
 tuned [[threshold]]s apply to the whole history at once.

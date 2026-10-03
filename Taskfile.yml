@@ -87,3 +87,37 @@ tasks:
     desc: 'Push the map to Hugging Face, e.g. task map:push -- -m "dnstrees from gists"'
     cmds:
       - uv run gitrecon atlas push {{.CLI_ARGS}}
+
+  docker:build:
+    desc: Build the gitrecon image (gitrecon:local)
+    cmds:
+      - docker compose build
+
+  docker:run:
+    desc: 'Run the CLI in a container, e.g. task docker:run -- stars sarverott'
+    dotenv: ['.env', '../../.env']   # TODO: forge .env is a temporary home for tokens
+    env:
+      UID: { sh: id -u }
+      GID: { sh: id -g }
+    cmds:
+      - mkdir -p data datasets
+      - docker compose run --rm gitrecon {{.CLI_ARGS}}
+    interactive: true
+
+  docker:listen:
+    desc: 'Listen on a feed in the background, e.g. task docker:listen -- org:github (default: public)'
+    dotenv: ['.env', '../../.env']
+    env:
+      UID: { sh: id -u }
+      GID: { sh: id -g }
+      FEED: '{{.CLI_ARGS | default "public"}}'
+    cmds:
+      - mkdir -p data datasets
+      - docker compose --profile listen up -d --build listen
+      - docker compose --profile listen logs --tail 5 listen
+
+  docker:stop:
+    desc: Stop the background listener
+    cmds:
+      - docker compose --profile listen down
+
