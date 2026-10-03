@@ -34,7 +34,3 @@ services:
       CHROME_CLI: --remote-debugging-port=9222
     volumes:
       - openclaw-browser-data:/config
-
-volumes:
-  openclaw-data:
-  openclaw-browser-data:

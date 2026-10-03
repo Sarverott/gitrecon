@@ -19,6 +19,3 @@ services:
       - "${WIREGUARD_BIND:-0.0.0.0}:${WIREGUARD_PORT:-51820}:51820/udp"
     volumes:
       - wireguard-config:/config
-
-volumes:
-  wireguard-config:

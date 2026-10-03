@@ -18,6 +18,3 @@ services:
       - github-runner-toolcache:/opt/hostedtoolcache
     deploy:
       replicas: ${GITHUB_RUNNERS:-1}
-
-volumes:
-  github-runner-toolcache:

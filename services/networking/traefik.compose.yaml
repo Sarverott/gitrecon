@@ -21,6 +21,3 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-logs:/var/log/traefik
-
-volumes:
-  traefik-logs:
