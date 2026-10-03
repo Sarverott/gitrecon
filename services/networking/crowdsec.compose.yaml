@@ -1,0 +1,17 @@
+# CrowdSec - detects and blocks abusive traffic, starting from traefik's access log.
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    profiles: [networking, crowdsec]
+    restart: unless-stopped
+    environment:
+      COLLECTIONS: crowdsecurity/traefik crowdsecurity/linux
+    volumes:
+      - crowdsec-config:/etc/crowdsec
+      - crowdsec-data:/var/lib/crowdsec/data
+      - traefik-logs:/var/log/traefik:ro
+
+volumes:
+  crowdsec-config:
+  crowdsec-data:
+  traefik-logs:

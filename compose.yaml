@@ -7,17 +7,15 @@
 #
 # Tokens are passed from the environment; the docker:* tasks load .env and the forge .env.
 
-# Planned: gitea, postgres, ollama, chromadb, freshrss, a GitHub runner, libretranslate,
-# wireguard, n8n, openclaw, traefik and the web interface from app/ (built separately).
-# They will live in compose/<service>.yaml, pulled in here with `include:`, so this file
-# stays a short index. Until then: only gitrecon itself.
+# The services around gitrecon (databases, internals, automations, networking, runners)
+# live in services/<group>/<service>.compose.yaml, pulled in below. All of them sit behind
+# profiles: `task services:list` shows them, `task services:up -- <group|service>` starts
+# them with their dependencies. The web interface (app/) comes later.
 
 name: gitrecon
 
-
 include:
   - services/compose.yaml
-
 
 x-gitrecon: &gitrecon
   build: .

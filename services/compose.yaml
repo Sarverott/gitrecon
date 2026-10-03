@@ -1,8 +1,13 @@
-# draft - look at every NOTE.md file and try to perform update of it to be correctly written
+# Services around gitrecon, one folder per group. Each group's compose.yaml includes one
+# <service>.compose.yaml per service; what each group holds is in its NOTE.md.
+#
+# Every service has two profiles - its group and its own name - so nothing starts by
+# accident. Start them with their dependencies: task services:up -- <group|service>...
+# (services/control.py), see them all: task services:list. Settings: services/.env.example.
 
 include:
-  - ./automations/compose.yaml # INCLUDES ./automations/*.compose.yaml
-  - ./databases/compose.yaml # INCLUDES ./databases/*.compose.yaml
-  - ./internals/compose.yaml # INCLUDES ./internals/*.compose.yaml
-  - ./networking/compose.yaml  # INCLUDES ./networking/*.compose.yaml
-  - ./runners/compose.yaml  # INCLUDES ./runners/*.compose.yaml
+  - ./databases/compose.yaml
+  - ./internals/compose.yaml
+  - ./automations/compose.yaml
+  - ./networking/compose.yaml
+  - ./runners/compose.yaml

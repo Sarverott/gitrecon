@@ -1,0 +1,6 @@
+# Networking: the edge (traefik), VPN (wireguard), protection (crowdsec), directory (openldap).
+include:
+  - ./traefik.compose.yaml
+  - ./wireguard.compose.yaml
+  - ./crowdsec.compose.yaml
+  - ./openldap.compose.yaml

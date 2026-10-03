@@ -9,6 +9,7 @@ includes:
   hooks: ./.husky/Taskfile.yml
   examples: ./examples/Taskfile.yml
   docs: ./docs/Taskfile.yml
+  services: ./services/Taskfile.yml
 
 tasks:
   default:

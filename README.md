@@ -89,6 +89,12 @@ by source and UTC hour.
 
 Thresholds live in `gitrecon.analysis.Thresholds`.
 
+## Environment
+
+Services around gitrecon - databases, gitea, ollama, n8n, traefik, runners and more - are
+docker compose files in `services/<group>/`, started with their dependencies:
+`task services:list`, `task services:up -- gitea n8n` (see `docs/guides/environment.md`).
+
 ## Examples and documentation
 
 - `examples/<title>/` - runnable Jupyter notebooks with concrete calls (`task examples:list`,
