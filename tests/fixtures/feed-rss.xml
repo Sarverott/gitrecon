@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Exploit Database</title>
+    <item>
+      <title>[remote] Teltonika RutOS - command injection</title>
+      <link>https://www.exploit-db.com/exploits/52000</link>
+      <guid>https://www.exploit-db.com/exploits/52000</guid>
+      <pubDate>Thu, 01 Oct 2026 00:00:00 +0000</pubDate>
+      <description>&lt;p&gt;Command &lt;b&gt;injection&lt;/b&gt;&lt;/p&gt;</description>
+      <dc:creator>someone</dc:creator>
+      <category>remote</category>
+    </item>
+    <item>
+      <title>No guid here</title>
+      <link>https://example.com/2</link>
+    </item>
+  </channel>
+</rss>

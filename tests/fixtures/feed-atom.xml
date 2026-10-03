@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>GitHub Security Advisories</title>
+  <entry>
+    <id>tag:github.com,2008:GHSA-xmhj-hj4f-c924</id>
+    <title>[GHSA-xmhj-hj4f-c924] Malicious code in voxeval (PyPI)</title>
+    <link rel="alternate" href="https://github.com/advisories/GHSA-xmhj-hj4f-c924"/>
+    <published>2026-10-03T00:31:16Z</published>
+    <updated>2026-10-03T00:31:17Z</updated>
+    <author><name>GitHub</name></author>
+    <category term="PIP"/>
+    <content type="html">&lt;p&gt;Malicious package&lt;/p&gt;</content>
+  </entry>
+</feed>

@@ -18,6 +18,47 @@ def _project_root() -> Path:
 PROJECT_ROOT = _project_root()
 
 
+def env_files() -> list[Path]:
+    """Dotenv files to read, most specific first.
+
+    ``GITRECON_ENV_FILE`` if set, the project's own ``.env``, then the BOS forge
+    ``.env`` (``__WORKSHOP/forge/.env``, found by walking up from the project).
+    TODO: the forge-level .env is a temporary home for secrets (HF_TOKEN, GH_TOKEN);
+    move them to .BOS/setup/ tokens once BOS manages them.
+    """
+    files = []
+    if os.environ.get("GITRECON_ENV_FILE"):
+        files.append(Path(os.environ["GITRECON_ENV_FILE"]))
+    files.append(PROJECT_ROOT / ".env")
+    for parent in PROJECT_ROOT.parents:
+        if parent.name == "forge" and parent.parent.name == "__WORKSHOP":
+            files.append(parent / ".env")
+            break
+    return files
+
+
+def parse_env(text: str) -> dict[str, str]:
+    values = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.removeprefix("export ").partition("=")
+        values[key.strip()] = value.strip().strip("'\"")
+    return values
+
+
+def load_env() -> list[Path]:
+    """Load dotenv files into ``os.environ`` without overriding what is already set."""
+    loaded = []
+    for path in env_files():
+        if path.is_file():
+            for key, value in parse_env(path.read_text(encoding="utf-8")).items():
+                os.environ.setdefault(key, value)
+            loaded.append(path)
+    return loaded
+
+
 def _path_env(name: str, default: Path) -> Path:
     return Path(os.environ[name]) if os.environ.get(name) else default
 

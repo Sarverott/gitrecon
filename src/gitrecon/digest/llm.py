@@ -1,6 +1,11 @@
 """Chat clients: local Ollama (bulk summarizing) and xAI (writing posts).
 
 Both speak plain HTTP, so they need no SDKs and are easy to fake in tests.
+
+TODO(llm-interfaces): on hold until the Ollama and OpenAI-compatible enterprise LLM
+endpoints are decided. Expected: one OpenAI-compatible client configured per
+provider (base URL, key, model) replacing the xAI-only client, Ollama kept for
+local bulk summarizing. Until then digest/posts work as they are, untuned.
 """
 
 from __future__ import annotations

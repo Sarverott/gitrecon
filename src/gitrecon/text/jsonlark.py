@@ -1,6 +1,7 @@
 """JSON grammar for Lark, used to inspect raw API responses as a parse tree.
 
-Deconstructed from ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+Deconstructed from the first notebook, ``docs/tests-with-md-parsing-and-rattish-implementations.ipynb``
+(removed, see git history; demo: ``examples/text-experiments``)
 (cell 9). For bulk data use ``json`` - this is for tree-level exploration.
 """
 
