@@ -6,7 +6,7 @@
 
 `databases` (postgres, mariadb, redis, chromadb), `internals` (gitea, ollama, registry,
 searxng, firefox, wikijs), `automations` (n8n, typesense, transmission, paymenter, ntfy,
-home-assistant, metamcp, openclaw), `networking` (traefik, wireguard, crowdsec, openldap)
+home-assistant, metamcp, openclaw), `networking` (traefik, dnsmasq, wireguard, cloudflared, ngrok, crowdsec, openldap)
 and `runners` (github-runner, gitea-runner, scheduler, webhook, nats). Each service has
 profiles `[group, name]`; databases are shared; every volume is a folder in
 `datasets/_dockdrives/` (declared in `services/volumes.compose.yaml`).
@@ -19,5 +19,5 @@ environment (`guides/environment.md`).
 
 ## Relations
 
-The [[menu]] lists the `services:*` tasks; the GitHub runner can run the jobs of the
+Reached through the [[gateway]]. The [[menu]] lists the `services:*` tasks; the GitHub runner can run the jobs of the
 [[craft-loop]]; ollama serves [[digest]]s.

@@ -15,7 +15,8 @@ services/
 ├── internals/   NOTE.md compose.yaml gitea ollama registry searxng firefox wikijs
 ├── automations/ NOTE.md compose.yaml n8n typesense transmission paymenter ntfy
 │                                     home-assistant metamcp openclaw
-├── networking/  NOTE.md compose.yaml traefik wireguard crowdsec openldap
+├── networking/  NOTE.md compose.yaml traefik dnsmasq wireguard cloudflared ngrok
+│                config/ (traefik.yml, traefik/dynamic.yml, dnsmasq/, ngrok.yml) crowdsec openldap
 └── runners/     NOTE.md compose.yaml github-runner gitea-runner scheduler webhook nats
 ```
 
@@ -33,6 +34,22 @@ task services:down                       # stops everything; volumes (the data) 
 task services:drives                     # every volume's folder: exists, size, users, engine
 task services:backup                     # archive them into datasets/_backups/ (or name volumes)
 ```
+
+## The gateway and the bubble
+
+Only traefik publishes ports (plus wireguard's UDP and transmission's peers): every web
+service is `<name>.gr.rs-tech.online` - see [[gateway]] and `services/networking/NOTE.md`.
+
+| From | How | Example |
+| --- | --- | --- |
+| this host | `*.localhost` resolves to the host by itself | `http://git.localhost:8880` |
+| the WireGuard bubble | peers route into `172.30.0.0/24`, dnsmasq is their DNS | `https://git.gr.rs-tech.online`, `psql -h postgres` |
+| the internet | cloudflared / ngrok → traefik's `public` entrypoint, only routers marked public | `https://<tunnel>/hooks/...` |
+
+Traefik's host ports default to 8880/8843 because a Coolify proxy holds 80/443 on this
+host; set `TRAEFIK_HTTP_PORT`/`TRAEFIK_HTTPS_PORT` where nothing does. The wildcard
+certificate needs `CF_DNS_API_TOKEN`; the VPN endpoint a DNS-only record such as
+`vpn.gr.rs-tech.online` and `WIREGUARD_SERVER_URL`.
 
 ## Where the data lives
 
@@ -62,8 +79,7 @@ targets need.
 
 ## Settings and safety
 
-- Every published port is bound to `127.0.0.1` until `BIND` says otherwise (wireguard and
-  transmission's peer port are the exceptions - they must be reachable).
+- Services publish no ports; traefik's are bound to `127.0.0.1` until `BIND` says otherwise.
 - Defaults are development passwords. Copy what you change from `services/.env.example`
   into `.env`; the tasks also read the forge `.env`.
 - `postgres` creates one database and owner per app on its first start
