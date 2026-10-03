@@ -1,3 +1,9 @@
+## v0.2.2 (2026-10-03)
+
+### Feat
+
+- **adding-json-printing**: invoking switches and presenting modes
+
 ## v0.2.1 (2026-10-03)
 
 ### Feat
