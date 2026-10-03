@@ -28,6 +28,10 @@ class Project(Entity):
     def ident(self) -> str:
         return f"{self.owner.lower()}/{self.number}"
 
+    @property
+    def html_url(self) -> str | None:
+        return self.url
+
     @classmethod
     def from_api(cls, data: dict[str, Any]) -> Project:
         """Accepts a GraphQL ``ProjectV2`` node (camelCase fields)."""

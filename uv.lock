@@ -1202,16 +1202,18 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "darkpoint" },
     { name = "defusedxml" },
-    { name = "gitpython" },
     { name = "lark" },
     { name = "markdownify" },
     { name = "marko" },
-    { name = "pygithub" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "toml" },
+    { name = "rich" },
+]
+
+[package.optional-dependencies]
+hub = [
+    { name = "huggingface-hub" },
 ]
 
 [package.dev-dependencies]
@@ -1226,8 +1228,10 @@ dev = [
     { name = "actionlint-py" },
     { name = "chromadb" },
     { name = "commitizen" },
+    { name = "darkpoint" },
     { name = "datasets" },
     { name = "docker" },
+    { name = "gitpython" },
     { name = "go-task-bin" },
     { name = "huggingface-hub" },
     { name = "ipywidgets" },
@@ -1238,10 +1242,12 @@ dev = [
     { name = "ollama" },
     { name = "openai" },
     { name = "podman" },
+    { name = "pygithub" },
     { name = "pytest" },
     { name = "safetensors" },
     { name = "shellcheck-py" },
     { name = "tokenizers" },
+    { name = "toml" },
     { name = "tomlkit" },
     { name = "tox" },
     { name = "transformers" },
@@ -1253,17 +1259,16 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.3" },
-    { name = "darkpoint", specifier = ">=0.2.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
-    { name = "gitpython", specifier = ">=3.1.46" },
+    { name = "huggingface-hub", marker = "extra == 'hub'", specifier = ">=1.7.2" },
     { name = "lark", specifier = ">=1.3.1" },
     { name = "markdownify", specifier = ">=1.2.3" },
     { name = "marko", specifier = ">=2.2.2" },
-    { name = "pygithub", specifier = ">=2.8.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.32.5" },
-    { name = "toml", specifier = ">=0.10.2" },
+    { name = "rich", specifier = ">=13.9.4" },
 ]
+provides-extras = ["hub"]
 
 [package.metadata.requires-dev]
 delivery = [
@@ -1277,8 +1282,10 @@ dev = [
     { name = "actionlint-py", specifier = ">=1.7.12.25" },
     { name = "chromadb", specifier = ">=1.5.5" },
     { name = "commitizen", specifier = ">=4.19.0" },
+    { name = "darkpoint", specifier = ">=0.2.0" },
     { name = "datasets", specifier = ">=4.8.3" },
     { name = "docker", specifier = ">=7.1.0" },
+    { name = "gitpython", specifier = ">=3.1.46" },
     { name = "go-task-bin", specifier = ">=3.53.1" },
     { name = "huggingface-hub", specifier = ">=1.7.2" },
     { name = "ipywidgets", specifier = ">=8.1.8" },
@@ -1289,10 +1296,12 @@ dev = [
     { name = "ollama", specifier = ">=0.6.1" },
     { name = "openai", specifier = ">=2.29.0" },
     { name = "podman", specifier = ">=5.7.0" },
+    { name = "pygithub", specifier = ">=2.8.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "safetensors", specifier = ">=0.7.0" },
     { name = "shellcheck-py", specifier = ">=0.11.0.1" },
     { name = "tokenizers", specifier = ">=0.22.2" },
+    { name = "toml", specifier = ">=0.10.2" },
     { name = "tomlkit", specifier = ">=0.15.1" },
     { name = "tox", specifier = ">=4.64.7" },
     { name = "transformers", specifier = ">=5.3.0" },

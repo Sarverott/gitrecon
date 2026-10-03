@@ -90,3 +90,8 @@ class Config:
     @property
     def state_dir(self) -> Path:
         return self.data_dir / "state"
+
+    @property
+    def links_catalog(self) -> Path:
+        """The link catalog harvested from gists (``gitrecon links --save``)."""
+        return self.data_dir / "catalog" / "links.jsonl"

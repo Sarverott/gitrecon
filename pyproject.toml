@@ -10,18 +10,19 @@ authors = [
 ]
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "darkpoint>=0.2.0",
     "defusedxml>=0.7.1",
-    "gitpython>=3.1.46",
     "lark>=1.3.1",
     "markdownify>=1.2.3",
     "marko>=2.2.2",
-    "pygithub>=2.8.1",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
-    "toml>=0.10.2",
+    "rich>=13.9.4",
 ]
 keywords = ["github", "recon", "osint", "gist", "data-mining"]
+
+[project.optional-dependencies]
+# the map dataset on Hugging Face: gitrecon atlas pull|push
+hub = ["huggingface-hub>=1.7.2"]
 
 [project.scripts]
 gitrecon = "gitrecon.main:main"
@@ -51,6 +52,11 @@ delivery = [
 dev = [
     { include-group = "test" },
     { include-group = "delivery" },
+    # not used by gitrecon itself (yet): kept for notebooks and experiments
+    "darkpoint>=0.2.0",
+    "gitpython>=3.1.46",
+    "pygithub>=2.8.1",
+    "toml>=0.10.2",
     "chromadb>=1.5.5",
     "datasets>=4.8.3",
     "docker>=7.1.0",
