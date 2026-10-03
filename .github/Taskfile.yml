@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# GitHub automation: the craft loop and the CI steps, runnable locally.
+# Included by the root Taskfile as `gh:`.
+
+version: '3'
+
+tasks:
+  loop:
+    desc: Show how .github/bos.config.json resolves (stages, auto-merge, versioning)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 .github/bos/flow.py explain
+
+  lint:
+    desc: Check the workflow files with actionlint
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - uv run --quiet actionlint
+
+  dist:
+    desc: Build the wheel and sdist like the release job does
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - scripts/delegated/workflow-gh/release/package-dist.sh
+
+  release:notes:
+    desc: 'Print the release notes CI would publish, e.g. task gh:release:notes TAG=v0.1.0'
+    dir: '{{.TASKFILE_DIR}}/..'
+    requires:
+      vars: [TAG]
+    env:
+      TAG_NAME: '{{.TAG}}'
+    cmds:
+      - defer: rm -f release_notes.md
+      - scripts/delegated/workflow-gh/release/notes.sh

@@ -1,1 +1,80 @@
 # gitrecon
+
+Exploring, recognizing and listening to GitHub activity of users, organizations,
+repositories and projects: collect events into a raw buffer, map who touches
+what, and conclude labels for what is happening.
+
+## Install
+
+```sh
+task install              # uv sync + npm install (git hooks)
+export GITHUB_TOKEN=...   # optional; falls back to `gh auth token`, else 60 requests/hour
+export OLLAMA_MODEL=llama3   # digest (local Ollama, OLLAMA_HOST)
+export XAI_API_KEY=...       # posts (XAI_MODEL, default grok-4)
+```
+
+## Usage
+
+```sh
+# collect
+gitrecon events public              # one poll of the public event stream
+gitrecon events org:github --watch  # keep listening (ETag + X-Poll-Interval)
+gitrecon events repo:owner/name
+gitrecon gists                      # newest public gists
+gitrecon gists --user octocat
+gitrecon archive 2026-10-01-0 2026-10-01-23   # GH Archive hours (UTC), streamed to disk
+
+gitrecon stars sarverott            # every repository a user has starred (--json, --save)
+gitrecon links ..                   # harvest data source links from gist clones in ..
+gitrecon links .. --kind feed --save
+
+# the map dataset (Hugging Face Apokryf/minimap-of-uce -> datasets/imperialmap)
+gitrecon atlas pull
+gitrecon atlas update               # gist links -> dnstrees, GitHub /meta -> ip-address-records
+gitrecon atlas status
+gitrecon atlas push -m "message"    # needs `uv run hf auth login`; --pr to open a Hub PR
+
+# content: summarize locally, then write drafts
+gitrecon digest stars:sarverott     # Ollama map-reduce; also labels | links | file:PATH
+gitrecon posts data/digests/<file>.md   # xAI: SEO article, tweet thread, LinkedIn, Mastodon
+
+# look
+gitrecon status                     # what is in the raw buffer
+gitrecon map                        # graph summary: nodes, relations, hubs
+gitrecon map --node user:octocat    # neighbors of one entity
+gitrecon label                      # labels with confidence and evidence
+gitrecon label --json
+
+# text experiments
+gitrecon text toc|tokens|rat [URL]
+```
+
+Data lands in `./data` (override with `GITRECON_DATA`) as gzip JSONL partitioned
+by source and UTC hour.
+
+## Labels
+
+| Label | Target | Meaning |
+|---|---|---|
+| `declared-bot` | user | `[bot]` account or `type: Bot` |
+| `burst` | user | many events within one window |
+| `bot-like-cadence` | user | evenly spaced events (low gap variation) |
+| `push-flood` | user | many commits pushed within one window |
+| `repo-spree` | user | many repositories created within one window |
+| `mass-forker` | user | many forks made within one window |
+| `fork-wave` | repo | many forks of one repo within one window |
+| `star-burst` | repo | many stars within one window |
+| `mass-gist-drop` | user | many gists created within one window |
+
+Thresholds live in `gitrecon.analysis.Thresholds`.
+
+## Development
+
+```sh
+task test
+task commit
+```
+
+Work goes through the BOS craft loop (`development → revision → testing →
+releasing → master`), with Conventional Commits, metadata sync and automated
+releases. See [CONTRIBUTING](.github/CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
