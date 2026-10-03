@@ -1,10 +1,18 @@
 # gitrecon in a container; data stays on the host in ./data and ./datasets.
 #
 #   task docker:run -- stars sarverott        (or: docker compose run --rm gitrecon stars sarverott)
+#   task docker:run -- menu                   the interactive menu (commands and status)
 #   task docker:listen -- org:github          keep listening on a feed in the background
 #   task docker:stop
 #
 # Tokens are passed from the environment; the docker:* tasks load .env and the forge .env.
+
+# Planned: gitea, postgres, ollama, chromadb, freshrss, a GitHub runner, libretranslate,
+# wireguard, n8n, openclaw, traefik and the web interface from app/ (built separately).
+# They will live in compose/<service>.yaml, pulled in here with `include:`, so this file
+# stays a short index. Until then: only gitrecon itself.
+
+name: gitrecon
 
 x-gitrecon: &gitrecon
   build: .

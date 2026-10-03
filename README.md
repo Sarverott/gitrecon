@@ -21,6 +21,9 @@ Or in a container: `task docker:run -- stars sarverott` (see `docs/guides/instal
 
 ## Usage
 
+The quickest start: `task menu` (or `uv run gitrecon`) - a full-screen menu where every command,
+task, example and manual is picked with the arrows and Enter.
+
 ```sh
 # collect
 gitrecon events public              # one poll of the public event stream
