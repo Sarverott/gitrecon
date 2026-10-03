@@ -7,7 +7,7 @@ constructor calls, step by step, with the matching CLI commands.
 | --- | --- | --- |
 | [getting-started](getting-started/) | `notebook.ipynb` | `Config`, `GitHubClient`, models, starred repositories, `RawBuffer`, `to_json()` / `html_url` for other programs |
 | [activity-labels](activity-labels/) | `notebook.ipynb` | events feed, GH Archive hour, `ActivityGraph`, `Labeler` + `Thresholds` |
-| [data-sources](data-sources/) | `01-gist-links` … `04-blog` | gist link harvest, RSS/Atom feeds, RFC index, blog articles |
+| [data-sources](data-sources/) | `01-gist-links` … `05-my-gists` | gist link harvest, RSS/Atom feeds, RFC index, blog articles, a user's gists (catalog, clone) |
 | [map-dataset](map-dataset/) | `01-dataset` … `03-push` | the Hugging Face map: pull, write findings, user-namespace, push |
 | [text-experiments](text-experiments/) | `notebook.ipynb` | markdown, word-chains, a12y numeronyms, RAT scripts, Lark JSON tree |
 
