@@ -1,0 +1,16 @@
+# ChromaDB - vector store for embeddings of collected data (digests, articles, docs).
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    profiles: [databases, chromadb]
+    restart: unless-stopped
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    ports:
+      - "${BIND:-127.0.0.1}:${CHROMADB_PORT:-8000}:8000"
+    volumes:
+      - chromadb-data:/data
+
+volumes:
+  chromadb-data:

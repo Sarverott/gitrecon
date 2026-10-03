@@ -17,7 +17,7 @@ tasks:
       - uv run --quiet python scripts/sync_metadata.py --check
 
   lint:
-    desc: Check the delegated shell scripts with shellcheck
+    desc: Check the shell scripts (delegated CI steps, services) with shellcheck
     dir: '{{.TASKFILE_DIR}}/..'
     cmds:
-      - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh
+      - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh services/*/*/*.sh

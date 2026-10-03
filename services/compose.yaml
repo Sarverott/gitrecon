@@ -1,0 +1,13 @@
+# Services around gitrecon, one folder per group. Each group's compose.yaml includes one
+# <service>.compose.yaml per service; what each group holds is in its NOTE.md.
+#
+# Every service has two profiles - its group and its own name - so nothing starts by
+# accident. Start them with their dependencies: task services:up -- <group|service>...
+# (services/control.py), see them all: task services:list. Settings: services/.env.example.
+
+include:
+  - ./databases/compose.yaml
+  - ./internals/compose.yaml
+  - ./automations/compose.yaml
+  - ./networking/compose.yaml
+  - ./runners/compose.yaml

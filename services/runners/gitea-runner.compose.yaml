@@ -1,0 +1,19 @@
+# Gitea Actions runner (act_runner) for the self-hosted gitea; register with a token from
+# gitea's Site Administration → Actions → Runners.
+services:
+  gitea-runner:
+    image: gitea/act_runner:latest
+    profiles: [runners, gitea-runner]
+    restart: unless-stopped
+    depends_on:
+      - gitea
+    environment:
+      GITEA_INSTANCE_URL: ${GITEA_RUNNER_INSTANCE_URL:-http://gitea:3000}
+      GITEA_RUNNER_REGISTRATION_TOKEN: ${GITEA_RUNNER_TOKEN:-}
+      GITEA_RUNNER_NAME: ${GITEA_RUNNER_NAME:-gitrecon}
+    volumes:
+      - gitea-runner-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock   # jobs run in sibling containers
+
+volumes:
+  gitea-runner-data:

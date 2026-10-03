@@ -1,0 +1,23 @@
+# GitHub Actions runners, self-hosted and ephemeral: one job per container, then a fresh one.
+# Ported from shakespeare-mobile's scripts/tools/gh-runners (without the Android SDK).
+# The token is read at start, not here: `task services:up -- github-runner` fills it from `gh auth token`.
+services:
+  github-runner:
+    build: ./github-runner
+    image: gitrecon-github-runner
+    profiles: [runners, github-runner]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s   # time to deregister on `down`
+    environment:
+      REPOSITORY: ${GITHUB_RUNNER_REPOSITORY:-Sarverott/gitrecon}
+      ACCESS_TOKEN: ${GITHUB_RUNNER_TOKEN:-}
+      RUNNER_LABELS: ${GITHUB_RUNNER_LABELS:-gitrecon}
+      RUNNER_PREFIX: ${GITHUB_RUNNER_PREFIX:-gitrecon}
+    volumes:
+      - github-runner-toolcache:/opt/hostedtoolcache
+    deploy:
+      replicas: ${GITHUB_RUNNERS:-1}
+
+volumes:
+  github-runner-toolcache:

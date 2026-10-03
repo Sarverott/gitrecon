@@ -1,0 +1,15 @@
+# Typesense - fast search index over collected items (repositories, articles, advisories).
+# No `latest` tag is published: pin a version.
+services:
+  typesense:
+    image: typesense/typesense:29.0
+    profiles: [automations, typesense]
+    restart: unless-stopped
+    command: ["--data-dir", "/data", "--api-key", "${TYPESENSE_API_KEY:-change-me-typesense}", "--enable-cors"]
+    ports:
+      - "${BIND:-127.0.0.1}:${TYPESENSE_PORT:-8108}:8108"
+    volumes:
+      - typesense-data:/data
+
+volumes:
+  typesense-data:

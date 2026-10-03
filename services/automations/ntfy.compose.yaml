@@ -1,0 +1,17 @@
+# ntfy - push notifications: alerts when a label fires or a run finishes.
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    profiles: [automations, ntfy]
+    restart: unless-stopped
+    command: ["serve"]
+    environment:
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8090}
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+    ports:
+      - "${BIND:-127.0.0.1}:${NTFY_PORT:-8090}:80"
+    volumes:
+      - ntfy-cache:/var/cache/ntfy
+
+volumes:
+  ntfy-cache:
