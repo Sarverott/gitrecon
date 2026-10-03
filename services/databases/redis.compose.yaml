@@ -1,0 +1,14 @@
+# Redis - shared cache and queue (paymenter; available to the others).
+services:
+  redis:
+    image: redis:7-alpine
+    profiles: [databases, redis]
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${BIND:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

@@ -1,3 +1,19 @@
+## v0.3.0 (2026-10-03)
+
+### BREAKING CHANGE
+
+- gitrecon has menu in terminal that is easy to use
+
+### Feat
+
+- **adding-terminal-user-interface**: TUI is beauty
+
+## v0.2.2 (2026-10-03)
+
+### Feat
+
+- **adding-json-printing**: invoking switches and presenting modes
+
 ## v0.2.1 (2026-10-03)
 
 ### Feat

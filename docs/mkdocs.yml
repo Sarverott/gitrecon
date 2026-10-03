@@ -66,6 +66,7 @@ nav:
       - guides/command-line.md
       - guides/integration.md
       - guides/examples.md
+      - guides/environment.md
       - guides/collecting-activity.md
       - guides/map-dataset.md
       - guides/writing-a-label-rule.md
@@ -110,6 +111,8 @@ nav:
       - Interfaces:
           - glossary/menu.md
           - glossary/output-mode.md
+      - Environment:
+          - glossary/services.md
       - Delivery:
           - glossary/craft-loop.md
           - glossary/metadata-sync.md

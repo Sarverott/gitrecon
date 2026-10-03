@@ -1,0 +1,13 @@
+# Docker registry - images built in the workshop (gitrecon, runners) without a public hub.
+services:
+  registry:
+    image: registry:2
+    profiles: [internals, registry]
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:${REGISTRY_PORT:-5000}:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+
+volumes:
+  registry-data:

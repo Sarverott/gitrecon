@@ -1,0 +1,23 @@
+# MetaMCP - aggregator and gateway for MCP servers (tools for AI agents, gitrecon among them).
+# Based on the project's docker-compose.yml; database on the shared postgres.
+services:
+  metamcp:
+    image: ghcr.io/metatool-ai/metamcp:latest
+    profiles: [automations, metamcp]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: metamcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitrecon}
+      POSTGRES_DB: metamcp
+      DATABASE_URL: postgresql://metamcp:${POSTGRES_PASSWORD:-gitrecon}@postgres:5432/metamcp
+      APP_URL: ${METAMCP_URL:-http://localhost:12008}
+      NEXT_PUBLIC_APP_URL: ${METAMCP_URL:-http://localhost:12008}
+      BETTER_AUTH_SECRET: ${METAMCP_AUTH_SECRET:-change-me-metamcp-secret}
+      TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL: "true"
+    ports:
+      - "${BIND:-127.0.0.1}:${METAMCP_PORT:-12008}:12008"

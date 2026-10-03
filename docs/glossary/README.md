@@ -78,6 +78,12 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Menu](menu.md) | The full-screen, arrow-driven way to run gitrecon: commands, tasks, examples, manuals, status. |
 | [Output mode](output-mode.md) | How a command prints: readable text, `--json` for programs, or `--urls` for addresses. |
 
+## Environment
+
+| Element | One line |
+| --- | --- |
+| [Services](services.md) | The environment around gitrecon: docker compose services in five groups, started with their dependencies. |
+
 ## Delivery
 
 | Element | One line |

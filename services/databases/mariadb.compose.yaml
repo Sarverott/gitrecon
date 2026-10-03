@@ -1,0 +1,22 @@
+# MariaDB - for the services that need MySQL/MariaDB (paymenter).
+services:
+  mariadb:
+    image: mariadb:11
+    profiles: [databases, mariadb]
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-gitrecon-root}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-paymenter}
+      MARIADB_USER: ${MARIADB_USER:-paymenter}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-gitrecon}
+    ports:
+      - "${BIND:-127.0.0.1}:${MARIADB_PORT:-3306}:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 5
+
+volumes:
+  mariadb-data:
