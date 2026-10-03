@@ -11,6 +11,8 @@ articles and posts from summaries of the data.
 src/gitrecon/
 ├── main.py         entry point `gitrecon` → gitrecon.cli
 ├── cli/            commands by area: collect, analyze, atlas, content; output (text|--json|--urls)
+├── tui/            interactive menu (rich): app, widgets (Selector, Viewer), commands (CLI → forms),
+│                   taskfiles (task --list-all --json + YAML), manuals, keys, theme
 ├── config.py       paths anchored at the project root; GITRECON_DATA, GITRECON_DATASETS,
 │                   GITHUB_TOKEN / GH_TOKEN (falls back to `gh auth token`), dotenv loading
 │                   (TODO: forge-level .env is temporary)
@@ -77,6 +79,23 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 - Item shapes come from models' `to_json()`; addresses from `html_url` (`url_for_key()` for
   bare keys). New model → `html_url` + `to_json()`; new command → both flags + a test in
   `tests/test_cli_output.py`; document shapes in `docs/guides/integration.md`.
+
+## Menu (gitrecon.tui)
+
+- Nothing is listed by hand: commands come from `gitrecon.cli.build_parser()`, tasks from
+  `task --list-all --json` + their YAML. Give every new command a `help`, every option a
+  `help`, every task a `desc`; write `e.g. task NAME -- ARGS` (or `NAME VAR=value`) in a
+  task's desc - the menu uses it as the default input.
+- Widgets keep state apart from drawing (`handle(key)` / `render()` / `run()`): test the
+  state, not the terminal (`tests/test_tui.py`).
+- The menu must degrade without Task, docs or examples (it runs in the container too).
+
+## Repository areas reserved
+
+- `app/` (not created yet): the separate web interface, built by others - do not write there.
+- `compose.yaml` will grow (gitea, postgres, ollama, chromadb, freshrss, runner,
+  libretranslate, wireguard, n8n, openclaw, traefik, app) and be split into
+  `compose/<service>.yaml` pulled in with `include:`.
 
 ## Working rules
 

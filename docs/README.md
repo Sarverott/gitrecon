@@ -8,6 +8,7 @@ findings into a shared map dataset, and can draft articles from summaries of the
 ## Start here
 
 - [[installation]] - setup and credentials
+- `task menu` - the interactive [[menu]]: everything with the arrows
 - [[command-line]] - every command, grouped by what it does
 - [[integration]] - `--json` / `--urls`, and gitrecon inside other programs
 - [[examples]] - runnable notebooks (`examples/<title>/`)
