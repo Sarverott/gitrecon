@@ -8,12 +8,11 @@ and comments - 100 gists per request; REST for commit counts, one request each).
 
 from __future__ import annotations
 
-import os
-import subprocess
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
+from gitrecon.sources.cloning import clone_many
 from gitrecon.sources.github_api import GitHubClient
 
 GIST_CLONE_URL = "https://gist.github.com/{gist_id}.git"
@@ -127,34 +126,7 @@ def clone_gists(
     with ``update=True``. One failure does not stop the rest. Returns one entry per gist:
     ``{"gistID", "path", "status": "cloned" | "exists" | "updated" | "failed", "error"}``.
     """
-    root = Path(path).expanduser()
-    root.mkdir(parents=True, exist_ok=True)
-    results = []
-    items = list(gists)
-    for index, gist in enumerate(items, start=1):
-        gist_id = gist if isinstance(gist, str) else gist["gistID"]
-        target = root / gist_id
-        if (target / ".git").is_dir():
-            if update:
-                done = _git("-C", str(target), "pull", "--ff-only", "--quiet")
-                status = "updated" if done.returncode == 0 else "failed"
-            else:
-                done, status = None, "exists"
-        elif target.exists() and any(target.iterdir()):
-            done, status = None, "failed"
-        else:
-            done = _git("clone", "--quiet", clone_url(gist_id, pattern), str(target))
-            status = "cloned" if done.returncode == 0 else "failed"
-        error = None
-        if status == "failed":
-            error = done.stderr.strip() if done else f"{target} exists and is not a git clone"
-        results.append({"gistID": gist_id, "path": str(target), "status": status, "error": error})
-        if progress:
-            progress(f"{index}/{len(items)} {status:<8} {gist_id}")
-    return results
-
-
-def _git(*args: str) -> subprocess.CompletedProcess:
-    # GIT_TERMINAL_PROMPT=0: a deleted gist must fail, not ask for a password
-    env = os.environ | {"GIT_TERMINAL_PROMPT": "0"}
-    return subprocess.run(["git", *args], capture_output=True, text=True, check=False, env=env)
+    ids = [gist if isinstance(gist, str) else gist["gistID"] for gist in gists]
+    results = clone_many(((gist_id, clone_url(gist_id, pattern)) for gist_id in ids), path,
+                         update=update, progress=progress)
+    return [{"gistID": r.pop("name"), **r} for r in results]
