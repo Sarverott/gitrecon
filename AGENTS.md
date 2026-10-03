@@ -49,6 +49,8 @@ src/gitrecon/
   each folder with `README.md` and `Taskfile.yml` (includes `examples/Taskfile.notebooks.yml`:
   launch, run, marimo, clean). Notebooks are committed without outputs; `.out/` and `marimo/`
   are generated. Anything publishing (map push) stays behind an explicit flag.
+- **devlog**: `docs/devlog/scrapnote-<UNIXUSAT>.md` (epoch ms, `node -e 'console.log(Date.now())'`) -
+  notes of a working round, not sorted yet; add them to the `Devlog` nav of `mkdocs.yml`.
 - **docs**: `docs/` is an Obsidian vault and a MkDocs sub-project (own `pyproject.toml`, built
   by Read the Docs from `.readthedocs.yaml`): `glossary/` one page per element, `guides/`.
   New element → glossary page + `glossary/README.md` + `mkdocs.yml` nav. `task docs:build`
