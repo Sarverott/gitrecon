@@ -1,3 +1,9 @@
+## v0.3.3 (2026-10-03)
+
+### Fix
+
+- **rafining-services-enclousure,-combining-net-stack,-delegating-gateway-access**: we need more solid work on managing core
+
 ## v0.3.2 (2026-10-03)
 
 ### Feat
