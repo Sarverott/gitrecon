@@ -7,7 +7,10 @@ services:
     environment:
       IS_PERSISTENT: "TRUE"
       ANONYMIZED_TELEMETRY: "FALSE"
-    ports:
-      - "${BIND:-127.0.0.1}:${CHROMADB_PORT:-8000}:8000"
     volumes:
       - chromadb-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.chromadb.rule: Host(`chroma.${DOMAIN:-gr.rs-tech.online}`) || Host(`chroma.localhost`)
+      traefik.http.routers.chromadb.middlewares: vpn-only@file
+      traefik.http.services.chromadb.loadbalancer.server.port: "8000"

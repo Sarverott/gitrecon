@@ -17,10 +17,12 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       BROWSER_CDP_URL: http://openclaw-browser:9223
       BROWSER_DEFAULT_PROFILE: openclaw
-    ports:
-      - "${BIND:-127.0.0.1}:${OPENCLAW_PORT:-18080}:8080"
     volumes:
       - openclaw-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.openclaw.rule: Host(`claw.${DOMAIN:-gr.rs-tech.online}`) || Host(`claw.localhost`)
+      traefik.http.services.openclaw.loadbalancer.server.port: "8080"
 
   openclaw-browser:
     image: coollabsio/openclaw-browser:latest

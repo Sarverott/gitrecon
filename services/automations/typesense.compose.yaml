@@ -6,7 +6,10 @@ services:
     profiles: [automations, typesense]
     restart: unless-stopped
     command: ["--data-dir", "/data", "--api-key", "${TYPESENSE_API_KEY:-change-me-typesense}", "--enable-cors"]
-    ports:
-      - "${BIND:-127.0.0.1}:${TYPESENSE_PORT:-8108}:8108"
     volumes:
       - typesense-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.typesense.rule: Host(`typesense.${DOMAIN:-gr.rs-tech.online}`) || Host(`typesense.localhost`)
+      traefik.http.routers.typesense.middlewares: vpn-only@file
+      traefik.http.services.typesense.loadbalancer.server.port: "8108"

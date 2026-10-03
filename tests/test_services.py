@@ -12,6 +12,9 @@ from gitrecon.config import PROJECT_ROOT
 
 SERVICES = PROJECT_ROOT / "services"
 GROUPS = ["databases", "internals", "automations", "networking", "runners"]
+PUBLISHING = {"traefik", "wireguard", "transmission"}  # gateway, VPN, torrent peers
+DOMAIN = "gr.rs-tech.online"
+NETWORKING = SERVICES / "networking"
 
 spec = importlib.util.spec_from_file_location("services_control", SERVICES / "control.py")
 control = importlib.util.module_from_spec(spec)
@@ -49,10 +52,10 @@ def test_services_follow_conventions(group):
             profiles = svc.get("profiles")
             assert profiles and profiles[0] == group, f"{name}: first profile must be the group"
             assert name in profiles or profiles[1] in yaml.safe_load(text)["services"], f"{name}: own profile"
-            for port in svc.get("ports", []):
-                host = port.split(":")[0]
-                # through ${BIND} (or a *_BIND), or pinned to localhost (traefik's open dashboard)
-                assert "BIND" in host or host == "127.0.0.1", f"{name}: publish {port!r} through ${{BIND}}"
+            if svc.get("ports"):  # closed by default: only the gateway and what must be reachable
+                assert name in PUBLISHING, f"{name}: no published ports - route it through traefik labels"
+                for port in svc["ports"]:
+                    assert "BIND" in port.split(":")[0], f"{name}: publish {port!r} through ${{BIND}} or a *_BIND"
         assert path.name.removesuffix(".compose.yaml") in note, f"{path.name} missing from {group}/NOTE.md"
 
 
@@ -147,4 +150,66 @@ def test_folder_size_and_no_access(tmp_path):
 def test_repo_dir_points_at_the_repository():
     assert control.ROOT == PROJECT_ROOT
     assert control.DOCKDRIVES == PROJECT_ROOT / "datasets" / "_dockdrives"
+
+
+# --- the gateway ----------------------------------------------------------------------
+
+
+def all_services():
+    for group in GROUPS:
+        for path in service_files(group):
+            yield from yaml.safe_load(path.read_text())["services"].items()
+
+
+def test_routed_services_answer_on_domain_and_localhost():
+    routed = 0
+    for name, svc in all_services():
+        labels = svc.get("labels") or {}
+        if labels.get("traefik.enable") != "true":
+            continue
+        routed += 1
+        rules = [v for k, v in labels.items() if k.startswith("traefik.http.routers.") and k.endswith(".rule")]
+        hosts = [r for r in rules if "Host(" in r]
+        assert hosts, f"{name}: no Host() rule"
+        for rule in hosts:
+            assert f"${{DOMAIN:-{DOMAIN}}}" in rule and ".localhost`)" in rule, f"{name}: {rule}"
+        assert any(k.endswith(".loadbalancer.server.port") for k in labels), f"{name}: name the container port"
+    assert routed >= 17
+
+
+def test_only_marked_routers_are_public():
+    public = [k for name, svc in all_services() for k, v in (svc.get("labels") or {}).items()
+              if k.endswith(".entrypoints") and "public" in v]
+    assert public == ["traefik.http.routers.webhook-public.entrypoints"]
+
+
+def test_static_config_and_bubble_agree():
+    static = yaml.safe_load((NETWORKING / "config" / "traefik.yml").read_text())
+    entry = static["entryPoints"]
+    assert entry["web"]["asDefault"] and entry["websecure"]["asDefault"] and "asDefault" not in entry["public"]
+    assert entry["websecure"]["http"]["tls"]["domains"][0] == {"main": DOMAIN, "sans": [f"*.{DOMAIN}"]}
+    assert "com.docker.compose.project" in static["providers"]["docker"]["constraints"]
+
+    def ip(file, service):
+        svc = yaml.safe_load((NETWORKING / file).read_text())["services"][service]
+        return svc["networks"]["default"]["ipv4_address"]
+
+    dnsmasq = (NETWORKING / "config" / "dnsmasq" / "gitrecon.conf").read_text()
+    assert f"address=/{DOMAIN}/{ip('traefik.compose.yaml', 'traefik')}" in dnsmasq
+    assert "server=//127.0.0.11" in dnsmasq
+    wireguard = yaml.safe_load((NETWORKING / "wireguard.compose.yaml").read_text())["services"]["wireguard"]
+    assert wireguard["environment"]["PEERDNS"] == ip("dnsmasq.compose.yaml", "dnsmasq")
+    network = yaml.safe_load((PROJECT_ROOT / "compose.yaml").read_text())["networks"]["default"]["ipam"]["config"][0]
+    assert network["subnet"] in wireguard["environment"]["ALLOWEDIPS"]
+    # fixed addresses stay outside the automatic range
+    assert all(int(ip(f, s).rsplit(".", 1)[1]) < 128 for f, s in
+               [("traefik.compose.yaml", "traefik"), ("dnsmasq.compose.yaml", "dnsmasq"),
+                ("wireguard.compose.yaml", "wireguard")])
+    assert network["ip_range"].endswith(".128/25")
+
+
+def test_routes_read_from_labels():
+    svc = {"labels": {"traefik.http.routers.git.rule": "Host(`git.gr.rs-tech.online`) || Host(`git.localhost`)",
+                      "traefik.http.routers.hook.rule": "PathPrefix(`/hooks`)"}}
+    assert control.routes(svc) == ["git.gr.rs-tech.online"]
 

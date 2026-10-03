@@ -15,9 +15,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitrecon}
       POSTGRES_DB: metamcp
       DATABASE_URL: postgresql://metamcp:${POSTGRES_PASSWORD:-gitrecon}@postgres:5432/metamcp
-      APP_URL: ${METAMCP_URL:-http://localhost:12008}
-      NEXT_PUBLIC_APP_URL: ${METAMCP_URL:-http://localhost:12008}
+      APP_URL: https://mcp.${DOMAIN:-gr.rs-tech.online}
+      NEXT_PUBLIC_APP_URL: https://mcp.${DOMAIN:-gr.rs-tech.online}
       BETTER_AUTH_SECRET: ${METAMCP_AUTH_SECRET:-change-me-metamcp-secret}
       TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL: "true"
-    ports:
-      - "${BIND:-127.0.0.1}:${METAMCP_PORT:-12008}:12008"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.metamcp.rule: Host(`mcp.${DOMAIN:-gr.rs-tech.online}`) || Host(`mcp.localhost`)
+      traefik.http.services.metamcp.loadbalancer.server.port: "12008"

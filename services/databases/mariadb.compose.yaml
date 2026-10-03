@@ -9,8 +9,6 @@ services:
       MARIADB_DATABASE: ${MARIADB_DATABASE:-paymenter}
       MARIADB_USER: ${MARIADB_USER:-paymenter}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:-gitrecon}
-    ports:
-      - "${BIND:-127.0.0.1}:${MARIADB_PORT:-3306}:3306"
     volumes:
       - mariadb-data:/var/lib/mysql
     healthcheck:
