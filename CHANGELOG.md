@@ -1,3 +1,13 @@
+## v0.3.1 (2026-10-03)
+
+### Feat
+
+- **improoving-services-setup-codes-of-docker-compose-infrastructure**: more independent ifrastructure, like island of digitalized federation
+
+### Fix
+
+- **adding-scaffoldings-of-services-environment-first-draft**: mostly blank files there
+
 ## v0.3.0 (2026-10-03)
 
 ### BREAKING CHANGE
