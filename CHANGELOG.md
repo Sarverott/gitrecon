@@ -1,3 +1,9 @@
+## v0.3.2 (2026-10-03)
+
+### Feat
+
+- **upgrade-services,-moving-docker-volumes-to-datasets-dir**: let data for backup be reachable
+
 ## v0.3.1 (2026-10-03)
 
 ### Feat
