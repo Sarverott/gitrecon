@@ -1,6 +1,10 @@
 # Command line
 
-`gitrecon <command> --help` describes every option. Grouped by what they do:
+`gitrecon <command> --help` describes every option. Grouped by what they do.
+
+**For programs:** most commands take `--json` (only data on stdout) and `--urls` (only web
+addresses, one per line) - see [[integration]] for the shapes. Example:
+`gitrecon stars sarverott --urls`.
 
 ## Collect
 
@@ -21,7 +25,7 @@
 | --- | --- |
 | `gitrecon status` | what is in the raw buffer |
 | `gitrecon map [--node KEY] [--full]` | the [[activity-graph]] |
-| `gitrecon label [--json]` | [[label]]s with confidence and evidence |
+| `gitrecon label [--name NAME] [--json\|--urls]` | [[label]]s with confidence and evidence |
 
 ## The map dataset
 

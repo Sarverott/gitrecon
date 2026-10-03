@@ -9,7 +9,8 @@ articles and posts from summaries of the data.
 
 ```
 src/gitrecon/
-├── main.py         CLI (argparse subcommands) — entry point `gitrecon`
+├── main.py         entry point `gitrecon` → gitrecon.cli
+├── cli/            commands by area: collect, analyze, atlas, content; output (text|--json|--urls)
 ├── config.py       paths anchored at the project root; GITRECON_DATA, GITRECON_DATASETS,
 │                   GITHUB_TOKEN / GH_TOKEN (falls back to `gh auth token`), dotenv loading
 │                   (TODO: forge-level .env is temporary)
@@ -59,6 +60,23 @@ src/gitrecon/
 - `.github/bos.config.json` + `.github/bos/flow.py` drive the branch loop
   `development → revision → testing → releasing → master → development`.
 - Multi-line CI steps live in `scripts/delegated/workflow-gh/<workflow>/<step>.sh`.
+
+## Container
+
+`Dockerfile` (python:3.12-alpine, two stages, only the venv is copied; `EXTRAS` build arg,
+hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
+under the `listen` profile). `.dockerignore` is an allow-list: pyproject, lock, README, src.
+Runtime-only dependencies stay minimal - anything not imported by `src/` belongs in a group.
+
+## Output contract (CLI)
+
+- Every listing command takes `--json` and, when items have web pages, `--urls`
+  (`add_output_flags()`); print through `Output` (`listing`, `stream`, `result`, `note`).
+- Machine modes: stdout holds only data (JSON list / object / JSON Lines for streams, or
+  one URL per line); notes, progress and summaries go to stderr via `out.note()`.
+- Item shapes come from models' `to_json()`; addresses from `html_url` (`url_for_key()` for
+  bare keys). New model → `html_url` + `to_json()`; new command → both flags + a test in
+  `tests/test_cli_output.py`; document shapes in `docs/guides/integration.md`.
 
 ## Working rules
 

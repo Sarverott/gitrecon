@@ -1,3 +1,13 @@
+## v0.2.1 (2026-10-03)
+
+### Feat
+
+- **adding-profilling-methods,-prepared-examples-of-usage**: making use of datasets, profiles was presented, data process of loaded-gathered-saved
+
+### Refactor
+
+- **squishing-more-profesional-examples-and-documentation-of-tool**: clearing awsomeness of this mess
+
 ## v0.2.0 (2026-10-03)
 
 ### BREAKING CHANGE

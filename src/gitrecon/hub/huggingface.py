@@ -5,7 +5,7 @@ Deconstructed from ``datasets/setups.ipynb`` (removed, see git history; demo:
 so its ``./imperialmap`` is ``<project>/datasets/imperialmap`` - now resolved from
 the project root (override with ``GITRECON_DATASETS``), not from the working dir.
 
-Needs ``huggingface-hub`` (dev dependency group), imported lazily.
+Needs ``huggingface-hub`` (the ``hub`` extra: ``gitrecon[hub]``), imported lazily.
 """
 
 from __future__ import annotations
@@ -20,8 +20,10 @@ MAP_DIRNAME = "imperialmap"
 
 
 def _hub():
-    import huggingface_hub
-
+    try:
+        import huggingface_hub
+    except ImportError as error:
+        raise RuntimeError("the map dataset needs the hub extra: pip install 'gitrecon[hub]'") from error
     return huggingface_hub
 
 

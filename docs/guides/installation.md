@@ -40,3 +40,22 @@ is already set: `GITRECON_ENV_FILE`, the project's `.env`, then `__WORKSHOP/forg
 | `datasets/imperialmap/` | local copy of the [[atlas]] | `GITRECON_DATASETS` |
 
 Both are git-ignored.
+
+## In a container
+
+No local Python needed - only Docker with Compose:
+
+```sh
+task docker:build
+task docker:run -- stars sarverott        # any gitrecon command
+task docker:listen -- org:github          # keep listening in the background (restarts with Docker)
+task docker:stop
+```
+
+- The image is Python on Alpine with only the locked runtime dependencies and the `hub` extra
+  (~125 MB; `docker build --build-arg EXTRAS="" .` leaves the hub out: ~92 MB, no map push/pull).
+- `./data` and `./datasets` are mounted, so the [[raw-buffer]] and the [[atlas]] stay on the host,
+  written as your user.
+- Tokens (`GITHUB_TOKEN`/`GH_TOKEN`, `HF_TOKEN`) come from the environment; the `docker:*` tasks
+  load them from `.env` and the forge `.env`. The container never calls `gh`.
+- Without Task: `docker compose run --rm gitrecon stars sarverott`.

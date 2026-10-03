@@ -47,6 +47,26 @@ class Event(Entity):
             return 0
         return self.payload.get("size") or len(self.payload.get("commits") or [])
 
+    @property
+    def html_url(self) -> str | None:
+        """Events have no page of their own: the repository they happened in (else the actor)."""
+        if self.repo:
+            return self.repo.html_url
+        return self.actor.html_url if self.actor else None
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "type": self.type,
+            "action": self.action,
+            "actor": self.actor.login if self.actor else None,
+            "repo": self.repo.full_name if self.repo else None,
+            "org": self.org.login if self.org else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "url": self.html_url,
+            "payload": self.payload,
+        }
+
     @classmethod
     def from_api(cls, data: dict[str, Any]) -> Event:
         return cls(
