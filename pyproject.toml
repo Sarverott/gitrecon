@@ -1,6 +1,6 @@
 [project]
 name = "gitrecon"
-version = "0.3.0"
+version = "0.3.1"
 description = "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects"
 readme = "README.md"
 requires-python = ">=3.12"
