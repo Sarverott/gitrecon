@@ -75,6 +75,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 
 | Element | One line |
 | --- | --- |
+| [Menu](menu.md) | The full-screen, arrow-driven way to run gitrecon: commands, tasks, examples, manuals, status. |
 | [Output mode](output-mode.md) | How a command prints: readable text, `--json` for programs, or `--urls` for addresses. |
 
 ## Delivery

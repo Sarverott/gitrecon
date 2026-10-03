@@ -50,6 +50,7 @@ task docker:build
 task docker:run -- stars sarverott        # any gitrecon command
 task docker:listen -- org:github          # keep listening in the background (restarts with Docker)
 task docker:stop
+task docker:run -- menu                  # the interactive menu (commands and status)
 ```
 
 - The image is Python on Alpine with only the locked runtime dependencies and the `hub` extra

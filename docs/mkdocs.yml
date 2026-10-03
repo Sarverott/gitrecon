@@ -62,6 +62,7 @@ nav:
   - Home: README.md
   - Guides:
       - guides/installation.md
+      - guides/menu.md
       - guides/command-line.md
       - guides/integration.md
       - guides/examples.md
@@ -107,6 +108,7 @@ nav:
           - glossary/digest.md
           - glossary/post-drafts.md
       - Interfaces:
+          - glossary/menu.md
           - glossary/output-mode.md
       - Delivery:
           - glossary/craft-loop.md

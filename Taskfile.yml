@@ -16,10 +16,18 @@ tasks:
       - task: help
     silent: true
 
+  menu:
+    desc: Interactive menu - commands, tasks, examples, manuals, status (arrows + enter)
+    cmds:
+      - uv run --quiet gitrecon menu
+    interactive: true
+
   help:
     desc: List every task, and where to read more
     cmds:
       - task --list
+      - echo ""
+      - 'echo "Menu:    task menu (or just: uv run gitrecon) - pick anything with the arrows"'
       - echo ""
       - 'echo "Manuals: task manuals lists the documentation in docs/ (guides, glossary);"'
       - 'echo "         task manuals -- <page> reads one, e.g. task manuals -- user-namespace"'
