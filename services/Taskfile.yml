@@ -53,6 +53,12 @@ tasks:
     cmds:
       - '{{.CONTROL}} backup {{.CLI_ARGS}}'
 
+  env:
+    desc: Regenerate services/.env.example from the compose files (after adding or changing a service)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} env'
+
   pull:
     desc: 'Pull images of services or groups (all when none given), e.g. task services:pull -- databases'
     dir: '{{.TASKFILE_DIR}}/..'

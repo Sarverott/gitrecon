@@ -29,6 +29,16 @@ x-gitrecon: &gitrecon
     - ./data:/data
     - ./datasets:/datasets
 
+# One network for the whole project, with fixed addresses for the gateway pieces
+# (traefik .10, dnsmasq .53, wireguard .2); automatic addresses come from .128-.254 only.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          ip_range: 172.30.0.128/25
+          gateway: 172.30.0.1
+
 services:
   gitrecon:
     <<: *gitrecon

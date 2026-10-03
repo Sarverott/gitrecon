@@ -9,9 +9,13 @@ services:
       PGID: "1000"
       TZ: ${TZ:-Etc/UTC}
     ports:
-      - "${BIND:-127.0.0.1}:${TRANSMISSION_PORT:-9091}:9091"
       - "${TRANSMISSION_PEER_BIND:-0.0.0.0}:51413:51413"
       - "${TRANSMISSION_PEER_BIND:-0.0.0.0}:51413:51413/udp"
     volumes:
       - transmission-config:/config
       - transmission-downloads:/downloads
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.transmission.rule: Host(`torrent.${DOMAIN:-gr.rs-tech.online}`) || Host(`torrent.localhost`)
+      traefik.http.routers.transmission.middlewares: vpn-only@file
+      traefik.http.services.transmission.loadbalancer.server.port: "9091"

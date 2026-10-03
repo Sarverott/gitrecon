@@ -82,6 +82,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 
 | Element | One line |
 | --- | --- |
+| [Gateway](gateway.md) | Traefik as the only way in: every web service is `<name>.gr.rs-tech.online`, nothing else publishes a port. |
 | [Services](services.md) | The environment around gitrecon: docker compose services in five groups, started with their dependencies. |
 
 ## Delivery

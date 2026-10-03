@@ -6,7 +6,12 @@ services:
     profiles: [runners, webhook]
     restart: unless-stopped
     command: ["-verbose", "-hooks=/etc/webhook/hooks.json", "-hotreload"]
-    ports:
-      - "${BIND:-127.0.0.1}:${WEBHOOK_PORT:-9000}:9000"
     volumes:
       - ./webhook:/etc/webhook:ro
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.webhook.rule: Host(`hooks.${DOMAIN:-gr.rs-tech.online}`) || Host(`hooks.localhost`)
+      traefik.http.services.webhook.loadbalancer.server.port: "9000"
+      traefik.http.routers.webhook-public.rule: PathPrefix(`/hooks`)
+      traefik.http.routers.webhook-public.entrypoints: public
+      traefik.http.routers.webhook-public.service: webhook
