@@ -1,0 +1,176 @@
+# Every persistent volume of services/, in one place: a bind mount of
+#   ${REPO_DIR}/datasets/_dockdrives/<volume>
+# so all service data sits in one folder - easy to check (task services:drives) and to back up.
+# REPO_DIR is set by the services:* tasks and services/control.py; plain `docker compose`
+# falls back to the current directory (run it from the repository root). The folders must
+# exist before a service starts: `task services:up` creates the ones it needs.
+
+volumes:
+  chromadb-data:   # chromadb
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/chromadb-data
+  crowdsec-config:   # crowdsec
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/crowdsec-config
+  crowdsec-data:   # crowdsec
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/crowdsec-data
+  firefox-config:   # firefox
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/firefox-config
+  gitea-data:   # gitea
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/gitea-data
+  gitea-runner-data:   # gitea-runner
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/gitea-runner-data
+  github-runner-toolcache:   # github-runner
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/github-runner-toolcache
+  home-assistant-config:   # home-assistant
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/home-assistant-config
+  mariadb-data:   # mariadb
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/mariadb-data
+  n8n-data:   # n8n
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/n8n-data
+  nats-data:   # nats
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/nats-data
+  ntfy-cache:   # ntfy
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/ntfy-cache
+  ollama-data:   # ollama
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/ollama-data
+  openclaw-browser-data:   # openclaw-browser
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/openclaw-browser-data
+  openclaw-data:   # openclaw
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/openclaw-data
+  openldap-config:   # openldap
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/openldap-config
+  openldap-data:   # openldap
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/openldap-data
+  paymenter-app:   # paymenter
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/paymenter-app
+  paymenter-var:   # paymenter
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/paymenter-var
+  postgres-data:   # postgres
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/postgres-data
+  redis-data:   # redis
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/redis-data
+  registry-data:   # registry
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/registry-data
+  searxng-config:   # searxng
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/searxng-config
+  traefik-logs:   # crowdsec, traefik
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/traefik-logs
+  transmission-config:   # transmission
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/transmission-config
+  transmission-downloads:   # transmission
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/transmission-downloads
+  typesense-data:   # typesense
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/typesense-data
+  wireguard-config:   # wireguard
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/wireguard-config

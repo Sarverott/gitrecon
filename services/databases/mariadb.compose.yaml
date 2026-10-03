@@ -17,6 +17,3 @@ services:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       retries: 5
-
-volumes:
-  mariadb-data:

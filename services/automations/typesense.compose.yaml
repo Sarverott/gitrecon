@@ -10,6 +10,3 @@ services:
       - "${BIND:-127.0.0.1}:${TYPESENSE_PORT:-8108}:8108"
     volumes:
       - typesense-data:/data
-
-volumes:
-  typesense-data:

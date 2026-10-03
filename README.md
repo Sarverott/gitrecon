@@ -93,7 +93,9 @@ Thresholds live in `gitrecon.analysis.Thresholds`.
 
 Services around gitrecon - databases, gitea, ollama, n8n, traefik, runners and more - are
 docker compose files in `services/<group>/`, started with their dependencies:
-`task services:list`, `task services:up -- gitea n8n` (see `docs/guides/environment.md`).
+`task services:list`, `task services:up -- gitea n8n`. Their data lives in
+`datasets/_dockdrives/<volume>` (`task services:drives`, `task services:backup`); see
+`docs/guides/environment.md`.
 
 ## Examples and documentation
 

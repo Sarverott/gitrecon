@@ -8,7 +8,8 @@ one file per service:
 compose.yaml                        gitrecon itself + include: services/compose.yaml
 services/
 ├── compose.yaml                    includes the groups
-├── control.py                      starts targets with their dependencies
+├── control.py                      starts targets with their dependencies; drives, backup
+├── volumes.compose.yaml            every volume, as a folder in datasets/_dockdrives/
 ├── .env.example                    every setting, with its default
 ├── databases/   NOTE.md compose.yaml postgres mariadb redis chromadb
 ├── internals/   NOTE.md compose.yaml gitea ollama registry searxng firefox wikijs
@@ -29,7 +30,30 @@ task services:up -- gitea n8n            # services - postgres comes along by it
 task services:ps
 task services:logs -- gitea
 task services:down                       # stops everything; volumes (the data) stay
+task services:drives                     # every volume's folder: exists, size, users, engine
+task services:backup                     # archive them into datasets/_backups/ (or name volumes)
 ```
+
+## Where the data lives
+
+Every volume is declared once, in `services/volumes.compose.yaml`, as a bind mount of
+`${REPO_DIR}/datasets/_dockdrives/<volume>`. All service data is therefore one folder:
+easy to check, to back up, or to move to another disk. `REPO_DIR` is the repository root;
+the tasks and `control.py` set it, plain `docker compose` falls back to the current
+directory (run it from the root).
+
+- `task services:up` creates the folders its services need (a bind mount fails on a
+  missing folder).
+- Services write their folders as their own users (postgres: uid 70, mode 700), so you
+  may not read them directly. `task services:drives` says `no access` for those;
+  `task services:backup` archives from inside a short-lived container and hands you the
+  archive. It refuses while a service using those volumes runs (`--live` to insist).
+- A volume created by the engine with another path shows as `other path` in `drives`:
+  `docker volume rm gitrecon_<volume>` and start again - the data stays in its folder.
+
+Containers and volumes are read through the docker SDK (podman's when no docker socket
+answers); compose itself (includes, profiles, up, down, pull, logs) runs as `docker compose`,
+which neither Python package implements.
 
 Nothing starts by accident: every service sits behind two profiles, its group and its own
 name. Compose leaves out services of disabled profiles entirely, so `services/control.py`

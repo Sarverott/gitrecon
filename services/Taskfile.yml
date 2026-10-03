@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 # The services of services/<group>/ (docker compose). Included by the root Taskfile as `services:`.
 # Targets are services or whole groups; their dependencies come along (services/control.py).
+# Volumes are folders: datasets/_dockdrives/<volume> (services/volumes.compose.yaml).
 
 version: '3'
 
@@ -39,6 +40,18 @@ tasks:
     cmds:
       - '{{.CONTROL}} logs {{.CLI_ARGS}}'
     interactive: true
+
+  drives:
+    desc: Check every volume's folder in datasets/_dockdrives/ - exists, size, users, engine side
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} drives'
+
+  backup:
+    desc: 'Archive dockdrives into datasets/_backups/ (all, or named), e.g. task services:backup -- postgres-data'
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - '{{.CONTROL}} backup {{.CLI_ARGS}}'
 
   pull:
     desc: 'Pull images of services or groups (all when none given), e.g. task services:pull -- databases'
