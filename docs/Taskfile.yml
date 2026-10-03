@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# The documentation: MkDocs over the markdown in this folder (config: mkdocs.yml, here).
+# From the repository root: task docs:serve, task docs:build, task docs:lock
+
+version: '3'
+
+vars:
+  MKDOCS: uv run --project {{.TASKFILE_DIR}} mkdocs
+
+tasks:
+  serve:
+    desc: Live preview of the docs site at http://127.0.0.1:8000
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds: ['{{.MKDOCS}} serve -f docs/mkdocs.yml']
+
+  build:
+    desc: Build the docs site into site/ and fail on any warning (as Read the Docs does)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds: ['{{.MKDOCS}} build --strict -f docs/mkdocs.yml']
+
+  lock:
+    desc: After editing docs/pyproject.toml, refresh uv.lock and the requirements.txt Read the Docs installs
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - uv lock
+      - uv export --no-hashes --no-header --no-annotate --no-emit-project -o requirements.txt

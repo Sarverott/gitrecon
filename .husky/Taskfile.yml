@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# Git hooks. The files in .husky/ only call these tasks.
+# Included by the root Taskfile as `hooks:`.
+
+version: '3'
+
+includes:
+  scripts:
+    taskfile: ../scripts/Taskfile.yml
+    internal: true
+
+tasks:
+  routines:
+    desc: Show which routines .husky/bos.config.json switches on
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 .husky/bos/routines.py explain
+
+  routine:add-all:
+    desc: Stage all changes, if auto_gitaddall_before_commit is on
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 .husky/bos/routines.py add-all
+
+  pre-commit:
+    desc: Stage all (routine), sync metadata.json into manifests and lockfiles, stage them, then run the checks and tests
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - task: routine:add-all
+      - task: scripts:sync
+      - git add package.json package-lock.json pyproject.toml uv.lock
+      - task: scripts:sync:check
+      - uv run --quiet pytest -q
+
+  commit-msg:
+    desc: 'Reject commit messages that are not Conventional Commits, e.g. task hooks:commit-msg -- .git/COMMIT_EDITMSG'
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - uv run --quiet cz check --commit-msg-file {{.CLI_ARGS}}
+
+  post-commit:
+    desc: Push the branch, if auto_push_after_commit is on (never master, never mid-rebase)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 .husky/bos/routines.py push
