@@ -17,6 +17,11 @@ addresses, one per line) - see [[integration]] for the shapes. Example:
 | `gitrecon stars USER [--json] [--save]` | repositories a user has starred ([[star]]) |
 | `gitrecon gist-catalog USER [--privacy all]` | every [[gist]] of a user: files, stars, comments, forks, commits, size |
 | `gitrecon gist-clone USER PATH [--limit N] [--dry-run] [--update]` | clone them as they are into `PATH/<gistID>` |
+| `gitrecon repos USER [--privacy all] [--no-forks] [--no-archived]` | repositories a user owns |
+| `gitrecon orgs USER` | organizations a user belongs to (all of them with the user's own token) |
+| `gitrecon org-repos ORG [--no-forks] [--no-archived]` | repositories of an organization |
+| `gitrecon repo-clone USER PATH [--depth 1] [--limit N] [--dry-run] [--update]` | clone a user's repositories into `PATH/<name>` |
+| `gitrecon org-clone ORG PATH [--depth 1] [--limit N] [--dry-run] [--update]` | clone an organization's repositories into `PATH/<name>` |
 | `gitrecon links [ROOT] [--kind feed] [--save]` | harvest the [[link-catalog]] from gist clones |
 | `gitrecon feeds [URL...] [--items] [--save]` | read [[news-feed]]s (default: from the catalog) |
 | `gitrecon rfc [--search W...] [--number N] [--save]` | the [[rfc-index]] |

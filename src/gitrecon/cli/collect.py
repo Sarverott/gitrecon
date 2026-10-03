@@ -97,6 +97,83 @@ def cmd_gist_clone(args: argparse.Namespace, config: Config, out: Output) -> int
     return 1 if failed else 0
 
 
+def _repo_text(r: dict) -> str:
+    flags = " ".join(f for f, on in (("fork", r["fork"]), ("archived", r["archived"]), ("private", r["private"])) if on)
+    return (f"{(r['created_at'] or '')[:10]}  {r['full_name']:<50} {r['language'] or '-':<12} *{r['stars']:<5} "
+            f"{r['size_kib'] / 1024:>8.1f} MiB  {flags}")
+
+
+def _repo_summary(what: str):
+    def summary(items: list) -> str:
+        size = sum(r["size_kib"] for r in items) / 1024
+        forks = sum(r["fork"] for r in items)
+        return f"-- {len(items)} repositories of {what} ({forks} forks), about {size:,.1f} MiB on GitHub"
+    return summary
+
+
+def cmd_repos(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.repos import user_repos
+
+    found = user_repos(args.user, _client(config), privacy=args.privacy, include_forks=not args.no_forks,
+                       include_archived=not args.no_archived)
+    out.listing(found, text=_repo_text, data=lambda r: r, url=lambda r: r["url"], summary=_repo_summary(args.user))
+    return 0
+
+
+def cmd_orgs(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.repos import user_orgs
+
+    found = user_orgs(args.user, _client(config))
+    out.listing(found, text=lambda o: f"{o['login']:<28} {o['description'][:80]}", data=lambda o: o,
+                url=lambda o: o["url"], summary=f"-- {len(found)} organizations of {args.user}")
+    return 0
+
+
+def cmd_org_repos(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.repos import org_repos
+
+    found = org_repos(args.org, _client(config), include_forks=not args.no_forks, include_archived=not args.no_archived)
+    out.listing(found, text=_repo_text, data=lambda r: r, url=lambda r: r["url"], summary=_repo_summary(args.org))
+    return 0
+
+
+def _clone_listed(repos: list[dict], args: argparse.Namespace, out: Output, what: str) -> int:
+    from gitrecon.sources.repos import clone_repos
+
+    chosen = repos[: args.limit] if args.limit else repos
+    size = sum(r["size_kib"] for r in chosen) / 1024
+    depth = f", depth {args.depth}" if args.depth else ""
+    if args.dry_run:
+        out.listing(chosen, text=lambda r: f"would clone {_repo_text(r)}", data=lambda r: r, url=lambda r: r["url"],
+                    summary=f"-- {len(chosen)} of {len(repos)} repositories of {what}, about {size:,.1f} MiB on "
+                            f"GitHub{depth} -> {Path(args.path).expanduser()}")
+        return 0
+    out.note(f"cloning {len(chosen)} of {len(repos)} repositories of {what} (about {size:,.1f} MiB{depth}) "
+             f"into {args.path}")
+    results = clone_repos(chosen, args.path, update=args.update, depth=args.depth,
+                          progress=out.note if not out.machine else None)
+    failed = [r for r in results if r["status"] == "failed"]
+    out.listing(results, text=lambda r: f"{r['status']:<8} {r['full_name']}" + (f"  {r['error']}" if r["error"] else ""),
+                data=lambda r: r, url=lambda r: f"https://github.com/{r['full_name']}",
+                summary=f"-- {len(results) - len(failed)} ok, {len(failed)} failed")
+    return 1 if failed else 0
+
+
+def cmd_repo_clone(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.repos import user_repos
+
+    repos = user_repos(args.user, _client(config), privacy=args.privacy, include_forks=not args.no_forks,
+                       include_archived=not args.no_archived)
+    return _clone_listed(repos, args, out, args.user)
+
+
+def cmd_org_clone(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.sources.repos import org_repos
+
+    repos = org_repos(args.org, _client(config), include_forks=not args.no_forks, include_archived=not args.no_archived)
+    return _clone_listed(repos, args, out, args.org)
+
+
 def cmd_stars(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.sources import stars
 
@@ -271,6 +348,50 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--dry-run", action="store_true", help="list what would be cloned and its size, clone nothing")
     add_output_flags(p)
     p.set_defaults(func=cmd_gist_clone)
+
+    def repo_filters(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--no-forks", action="store_true", help="leave forks out")
+        p.add_argument("--no-archived", action="store_true", help="leave archived repositories out")
+
+    def clone_options(p: argparse.ArgumentParser) -> None:
+        p.add_argument("path", help="where the clones go, PATH/<name> (created when missing)")
+        p.add_argument("--limit", type=int, help="only the first N (oldest first)")
+        p.add_argument("--depth", type=int, help="shallow clones, e.g. 1 = newest commit only (much smaller)")
+        p.add_argument("--update", action="store_true", help="fast-forward clones that exist already")
+        p.add_argument("--dry-run", action="store_true", help="list what would be cloned and its size, clone nothing")
+
+    p = sub.add_parser("repos", help="repositories a user owns")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    p.add_argument("--privacy", choices=["public", "all"], default="public", help="all: private too (own token)")
+    repo_filters(p)
+    add_output_flags(p)
+    p.set_defaults(func=cmd_repos)
+
+    p = sub.add_parser("orgs", help="organizations a user belongs to (all of them with the user's own token)")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    add_output_flags(p)
+    p.set_defaults(func=cmd_orgs)
+
+    p = sub.add_parser("org-repos", help="repositories of an organization")
+    p.add_argument("org", help="organization login, e.g. The-Apokryf")
+    repo_filters(p)
+    add_output_flags(p)
+    p.set_defaults(func=cmd_org_repos)
+
+    p = sub.add_parser("repo-clone", help="clone the repositories a user owns into PATH/<name>")
+    p.add_argument("user", help="GitHub nickname, e.g. sarverott")
+    clone_options(p)
+    p.add_argument("--privacy", choices=["public", "all"], default="public", help="all: private too (own token)")
+    repo_filters(p)
+    add_output_flags(p)
+    p.set_defaults(func=cmd_repo_clone)
+
+    p = sub.add_parser("org-clone", help="clone the repositories of an organization into PATH/<name>")
+    p.add_argument("org", help="organization login, e.g. The-Apokryf")
+    clone_options(p)
+    repo_filters(p)
+    add_output_flags(p)
+    p.set_defaults(func=cmd_org_clone)
 
     p = sub.add_parser("stars", help="list repositories starred by a user")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")
