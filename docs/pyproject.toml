@@ -1,0 +1,18 @@
+# The documentation as its own uv project. Dependencies are listed here only;
+# requirements.txt (for Read the Docs) is generated from them: `task docs:lock`.
+[project]
+name = "gitrecon-docs"
+version = "0.1.0"
+description = "Documentation of gitrecon, built with MkDocs"
+readme = "README.md"
+authors = [
+    { name = "Sett Sarverott", email = "sett@sarverott.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.5,<10",
+]
+
+[tool.uv]
+package = false

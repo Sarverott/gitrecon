@@ -1,0 +1,9 @@
+{
+    "routines":{
+        
+        "flags":{
+            "auto_gitaddall_before_commit":true,
+            "auto_push_after_commit":true
+        }
+    }
+}

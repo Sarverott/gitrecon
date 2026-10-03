@@ -1,0 +1,101 @@
+name: PR Tests & Checks
+
+# Runs for PRs opened by people (pull_request) and for PRs opened by the loop itself
+# (workflow_dispatch from bos-flow.yml). When everything passes, the PR is merged if
+# .github/bos.config.json allows auto-merge for its direction, and the next step starts.
+
+on:
+  pull_request:
+    branches: [master, development, revision, testing, releasing, rejection]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  context:
+    name: Resolve Pull Request
+    runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      base_sha: ${{ steps.pr.outputs.base_sha }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/delegated/workflow-gh/pr-checks/resolve-pr.sh "${{ github.event.pull_request.number || inputs.pr }}"
+
+  conventions:
+    name: Commit Messages & Metadata Sync
+    needs: context
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ needs.context.outputs.number }}/merge
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install tooling
+        run: uv sync --frozen --no-default-groups --group delivery
+
+      - name: Check commit messages (Conventional Commits)
+        run: uv run --no-sync cz check --rev-range "${{ needs.context.outputs.base_sha }}..${{ needs.context.outputs.head_sha }}"
+
+      - name: Check package.json and pyproject.toml match metadata.json
+        run: uv run --no-sync python scripts/sync_metadata.py --check
+
+  tests:
+    name: Unit Tests
+    needs: context
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ needs.context.outputs.number }}/merge
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install package and test tools
+        run: uv sync --frozen --no-default-groups --group test
+
+      - name: Run pytest (offline)
+        run: uv run --no-sync pytest
+
+  auto-merge:
+    name: Auto-Merge (per bos.config.json)
+    needs: [context, conventions, tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Merge if allowed and start the next loop step
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 .github/bos/flow.py automerge "${{ needs.context.outputs.number }}"

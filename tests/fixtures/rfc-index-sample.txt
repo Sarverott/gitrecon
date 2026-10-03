@@ -1,0 +1,96 @@
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                             RFC INDEX
+                           -------------
+
+(CREATED ON: 10/02/2026.)
+
+This file contains citations for all RFCs in numeric order.
+
+RFC citations appear in this format:
+
+  ####  Title of RFC.  Author 1, Author 2, Author 3.  Issue date.
+        (Format: ASCII) (Obsoletes xxx) (Obsoleted by xxx) (Updates xxx)
+        (Updated by xxx) (Also FYI ####) (Status: ssssss) (DOI: ddd)
+
+or
+
+  ####  Not Issued.
+
+For example:
+
+  9915 Dynamic Host Configuration Protocol for IPv6 (DHCPv6). T. Mrugalski,
+       B. Volz, M. Richardson, S. Jiang, T. Winters. January 2026. (Format:
+       HTML, TXT, PDF, XML) (Obsoletes RFC8415) (Also STD102) (Status:
+       INTERNET STANDARD) (DOI: 10.17487/RFC9915)
+
+Key to citations:
+
+#### is the RFC number.
+
+Following the RFC number are the title, the author(s), and the
+publication date of the RFC.  Each of these is terminated by a period.
+
+Following the number are the title (terminated with a period), the
+author, or list of authors (terminated with a period), and the date
+(terminated with a period).
+
+The format follows in parentheses. One or more of the following formats
+are listed:  text (TXT), PostScript (PS), Portable Document Format
+(PDF), HTML, XML.
+
+Obsoletes xxxx refers to other RFCs that this one replaces;
+Obsoleted by xxxx refers to RFCs that have replaced this one.
+Updates xxxx refers to other RFCs that this one merely updates (but
+does not replace); Updated by xxxx refers to RFCs that have updated
+(but not replaced) this one.  Generally, only immediately succeeding
+and/or preceding RFCs are indicated, not the entire history of each
+related earlier or later RFC in a related series.
+
+The (Also FYI ##) or (Also STD ##) or (Also BCP ##) phrase gives the
+equivalent FYI, STD, or BCP number if the RFC is also in those
+document sub-series.  The Status field gives the document's
+current status (see RFC 2026).  The (DOI ddd) field gives the
+Digital Object Identifier.
+
+RFCs may be obtained in a number of ways, using HTTP, FTP, or email.
+See the RFC Editor Web page http://www.rfc-editor.org
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                                RFC INDEX
+                                ---------
+
+
+
+1 Host Software. S. Crocker. April 1969. (Format: TXT, HTML) (Status:
+     UNKNOWN) (DOI: 10.17487/RFC1)
+
+3 Documentation conventions. S.D. Crocker. April 1969. (Format: TXT,
+     HTML) (Obsoleted by RFC10) (Status: UNKNOWN) (DOI: 10.17487/RFC3)
+
+14 Not Issued.
+
+2026 The Internet Standards Process -- Revision 3. S. Bradner. October
+     1996. (Format: TXT, HTML) (Obsoletes RFC1602, RFC1871) (Updated by
+     RFC3667, RFC3668, RFC3932, RFC3978, RFC3979, RFC5378, RFC5657,
+     RFC5742, RFC6410, RFC7100, RFC7127, RFC7475, RFC8179, RFC8789,
+     RFC9282) (Also BCP9) (Status: BEST CURRENT PRACTICE) (DOI:
+     10.17487/RFC2026)
+
+9999 Remote ATtestation procedureS (RATS) Conceptual Message Wrapper
+     (CMW). H. Birkholz, N. Smith, T. Fossati, H. Tschofenig. July 2026.
+     (Format: HTML, TXT, PDF, XML) (Status: PROPOSED STANDARD) (DOI:
+     10.17487/RFC9999)
+
+10041 Advertising Unreachable Links in OSPF. L. Gong, W. Cheng, C. Lin,
+     A. Lindem, R. Chen. September 2026. (Format: HTML, TXT, PDF, XML)
+     (Updates RFC5443, RFC6987, RFC8379, RFC8770) (Status: PROPOSED
+     STANDARD) (DOI: 10.17487/RFC10041)
+
+10042 Post-Quantum/Traditional Hybrid Key Exchange with the Module-
+     Lattice-Based Key-Encapsulation Mechanism for Use in SSH. P.
+     Kampanakis, D. Stebila, T. Hansen. August 2026. (Format: HTML, TXT,
+     PDF, XML) (Status: INFORMATIONAL) (DOI: 10.17487/RFC10042)

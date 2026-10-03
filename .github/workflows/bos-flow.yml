@@ -1,0 +1,44 @@
+name: BOS Loop Step
+
+# Opens the PR from a branch to its next stage, as defined in .github/bos.config.json,
+# and starts its checks. Started by pushes, or dispatched by the previous loop step.
+
+on:
+  push:
+    branches:
+      - development
+      - revision
+      - testing
+      - releasing
+      - rejection
+      - 'feature/**'
+      - 'fix/**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch whose next loop step should be opened
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: bos-flow-${{ inputs.branch || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  next-pr:
+    name: Open PR to next stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Open PR and start its checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ inputs.branch || github.ref_name }}
+        run: python3 .github/bos/flow.py next-pr "$BRANCH"

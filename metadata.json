@@ -1,0 +1,19 @@
+{
+    "name": "gitrecon",
+    "description": "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects",
+    "version": "0.2.0",
+    "authors":[
+        ["Sarverott", "Sett Sarverott A.A.B. <sett@sarverott.com> (https://sett.sarverott.com)", "https://sarverott.com"]
+    ],
+    "links": [
+        "https://github.com/Sarverott/gitrecon",
+        "https://huggingface.co/datasets/Apokryf/minimap-of-uce"
+    ],
+    "tags": [
+        "github",
+        "recon",
+        "osint",
+        "gist",
+        "data-mining"
+    ]
+}
