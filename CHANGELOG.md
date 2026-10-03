@@ -1,3 +1,13 @@
+## v0.4.0 (2026-10-03)
+
+### BREAKING CHANGE
+
+- most of github basic mass management is ready
+
+### Feat
+
+- **adding-repo,-cloning,-user-and-orgs-methods-for-github-resources**: massive cloning is on the board
+
 ## v0.3.4 (2026-10-03)
 
 ### Feat
