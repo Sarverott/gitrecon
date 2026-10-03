@@ -144,6 +144,12 @@ volumes:
       type: none
       o: bind
       device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/searxng-config
+  traefik-acme:   # traefik (certificates)
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REPO_DIR:-${PWD}}/datasets/_dockdrives/traefik-acme
   traefik-logs:   # crowdsec, traefik
     driver: local
     driver_opts:

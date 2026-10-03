@@ -1,0 +1,19 @@
+# Traefik dynamic configuration (watched: changes apply live). Go templates are available:
+# {{ env "DOMAIN" }} is the main domain (gr.rs-tech.online).
+
+http:
+  middlewares:
+    # the host (published ports arrive from the network gateway 172.30.0.1), the project
+    # network and WireGuard peers (NATed through the wireguard container)
+    vpn-only:
+      ipAllowList:
+        sourceRange:
+          - 127.0.0.1/32
+          - 172.30.0.0/24
+          - 10.13.13.0/24
+
+  routers:
+    dashboard:
+      rule: Host(`traefik.{{ env "DOMAIN" }}`) || Host(`traefik.localhost`)
+      service: api@internal
+      middlewares: [vpn-only]

@@ -16,7 +16,11 @@ services:
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-n8n-key}
       N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}   # plain http on localhost
       GENERIC_TIMEZONE: ${TZ:-Etc/UTC}
-    ports:
-      - "${BIND:-127.0.0.1}:${N8N_PORT:-5678}:5678"
+      N8N_HOST: n8n.${DOMAIN:-gr.rs-tech.online}
+      WEBHOOK_URL: https://n8n.${DOMAIN:-gr.rs-tech.online}/
     volumes:
       - n8n-data:/home/node/.n8n
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.n8n.rule: Host(`n8n.${DOMAIN:-gr.rs-tech.online}`) || Host(`n8n.localhost`)
+      traefik.http.services.n8n.loadbalancer.server.port: "5678"
