@@ -1,0 +1,20 @@
+# OpenLDAP - one directory of users for gitea, wikijs and the others (osixia image).
+services:
+  openldap:
+    image: osixia/openldap:latest
+    profiles: [networking, openldap]
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: ${LDAP_ORGANISATION:-gitrecon}
+      LDAP_DOMAIN: ${LDAP_DOMAIN:-gitrecon.local}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-change-me-ldap}
+    ports:
+      - "${BIND:-127.0.0.1}:${LDAP_PORT:-389}:389"
+      - "${BIND:-127.0.0.1}:${LDAPS_PORT:-636}:636"
+    volumes:
+      - openldap-data:/var/lib/ldap
+      - openldap-config:/etc/ldap/slapd.d
+
+volumes:
+  openldap-data:
+  openldap-config:

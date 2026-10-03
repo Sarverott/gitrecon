@@ -1,0 +1,10 @@
+# Automations: workflows, search index, downloads, billing, notifications, home, AI agents.
+include:
+  - ./n8n.compose.yaml
+  - ./typesense.compose.yaml
+  - ./transmission.compose.yaml
+  - ./paymenter.compose.yaml
+  - ./ntfy.compose.yaml
+  - ./home-assistant.compose.yaml
+  - ./metamcp.compose.yaml
+  - ./openclaw.compose.yaml

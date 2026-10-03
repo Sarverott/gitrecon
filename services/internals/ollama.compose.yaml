@@ -1,0 +1,19 @@
+# Ollama - local language models (gitrecon digest, openclaw). Host port 11435, so a host
+# ollama on 11434 can keep running.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    profiles: [internals, ollama]
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:${OLLAMA_PORT:-11435}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    # GPU (needs the NVIDIA container toolkit on the host):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+
+volumes:
+  ollama-data:

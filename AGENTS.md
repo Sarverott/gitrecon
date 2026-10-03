@@ -90,12 +90,20 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   state, not the terminal (`tests/test_tui.py`).
 - The menu must degrade without Task, docs or examples (it runs in the container too).
 
-## Repository areas reserved
+## Services (services/)
 
-- `app/` (not created yet): the separate web interface, built by others - do not write there.
-- `compose.yaml` will grow (gitea, postgres, ollama, chromadb, freshrss, runner,
-  libretranslate, wireguard, n8n, openclaw, traefik, app) and be split into
-  `compose/<service>.yaml` pulled in with `include:`.
+- `services/<group>/<service>.compose.yaml`, one file per service, listed in the group's
+  `compose.yaml`; groups listed in `services/compose.yaml`, which the root `compose.yaml`
+  includes. Each group describes itself in `NOTE.md` (table: service, image, address, needs).
+- Every service has `profiles: [<group>, <service>]`; start through `services/control.py`
+  (`task services:up -- …`), which follows `depends_on` across groups. Databases are shared
+  (`databases/`); new apps get a database via `POSTGRES_MULTIPLE_DATABASES`.
+- Publish ports as `${BIND:-127.0.0.1}:${<NAME>_PORT:-n}:n`; no `${VAR:?}` (one unset
+  variable would break every compose command); defaults are dev passwords.
+- New service → its file, the group's `compose.yaml`, `NOTE.md`, and regenerate
+  `services/.env.example`; check with `docker compose --profile '*' config -q`.
+- `app/` (not created yet, on purpose): the web interface, built later by others - do not
+  write there. First the environment, the CLI and the terminal interface.
 
 ## Working rules
 

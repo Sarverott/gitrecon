@@ -1,0 +1,18 @@
+# Firefox in a container - a disposable browser for visiting what recon finds (web UI on 5800).
+services:
+  firefox:
+    image: jlesage/firefox:latest
+    profiles: [internals, firefox]
+    restart: unless-stopped
+    shm_size: 2g
+    environment:
+      USER_ID: "1000"
+      GROUP_ID: "1000"
+      TZ: ${TZ:-Etc/UTC}
+    ports:
+      - "${BIND:-127.0.0.1}:${FIREFOX_PORT:-5800}:5800"
+    volumes:
+      - firefox-config:/config
+
+volumes:
+  firefox-config:

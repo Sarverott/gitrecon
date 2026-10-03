@@ -1,0 +1,24 @@
+# WireGuard - VPN into the workshop network (linuxserver image; peers' configs land in /config).
+# A VPN must be reachable: WIREGUARD_BIND defaults to all interfaces.
+services:
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    profiles: [networking, wireguard]
+    restart: unless-stopped
+    cap_add: [NET_ADMIN]
+    sysctls:
+      net.ipv4.conf.all.src_valid_mark: "1"
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: ${TZ:-Etc/UTC}
+      SERVERURL: ${WIREGUARD_SERVER_URL:-auto}
+      PEERS: ${WIREGUARD_PEERS:-1}
+      INTERNAL_SUBNET: ${WIREGUARD_SUBNET:-10.13.13.0}
+    ports:
+      - "${WIREGUARD_BIND:-0.0.0.0}:${WIREGUARD_PORT:-51820}:51820/udp"
+    volumes:
+      - wireguard-config:/config
+
+volumes:
+  wireguard-config:

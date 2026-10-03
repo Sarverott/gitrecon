@@ -1,0 +1,12 @@
+# Webhook watcher - runs commands on incoming HTTP hooks (GitHub, gitea, n8n); hooks are
+# defined in webhook/hooks.json and reloaded on change.
+services:
+  webhook:
+    image: almir/webhook:latest
+    profiles: [runners, webhook]
+    restart: unless-stopped
+    command: ["-verbose", "-hooks=/etc/webhook/hooks.json", "-hotreload"]
+    ports:
+      - "${BIND:-127.0.0.1}:${WEBHOOK_PORT:-9000}:9000"
+    volumes:
+      - ./webhook:/etc/webhook:ro
