@@ -14,6 +14,11 @@
 
 name: gitrecon
 
+
+include:
+  - services/compose.yaml
+
+
 x-gitrecon: &gitrecon
   build: .
   image: gitrecon:local
