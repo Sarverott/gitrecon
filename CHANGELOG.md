@@ -1,3 +1,9 @@
+## v0.3.4 (2026-10-03)
+
+### Feat
+
+- **adding-gist-recollecting,-making-it-core-methods,-examples-and-tests-included**: gists was pushed to wan and forgotted, now will be bringed back to local zone
+
 ## v0.3.3 (2026-10-03)
 
 ### Fix

@@ -1198,7 +1198,7 @@ wheels = [
 
 [[package]]
 name = "gitrecon"
-version = "0.3.3"
+version = "0.3.4"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

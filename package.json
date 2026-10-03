@@ -1,6 +1,6 @@
 {
   "name": "gitrecon",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects",
   "keywords": [
     "github",
