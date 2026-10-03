@@ -23,6 +23,3 @@ services:
       - "${BIND:-127.0.0.1}:${GITEA_SSH_PORT:-2222}:22"
     volumes:
       - gitea-data:/data
-
-volumes:
-  gitea-data:

@@ -31,7 +31,7 @@ def includes(path):
 
 def test_root_and_index_include_every_group():
     assert "services/compose.yaml" in includes(PROJECT_ROOT / "compose.yaml")
-    assert includes(SERVICES / "compose.yaml") == [f"./{g}/compose.yaml" for g in GROUPS]
+    assert includes(SERVICES / "compose.yaml") == ["./volumes.compose.yaml"] + [f"./{g}/compose.yaml" for g in GROUPS]
 
 
 @pytest.mark.parametrize("group", GROUPS)
@@ -54,6 +54,23 @@ def test_services_follow_conventions(group):
                 # through ${BIND} (or a *_BIND), or pinned to localhost (traefik's open dashboard)
                 assert "BIND" in host or host == "127.0.0.1", f"{name}: publish {port!r} through ${{BIND}}"
         assert path.name.removesuffix(".compose.yaml") in note, f"{path.name} missing from {group}/NOTE.md"
+
+
+def test_volumes_live_only_in_volumes_file_as_dockdrives():
+    declared = yaml.safe_load((SERVICES / "volumes.compose.yaml").read_text())["volumes"]
+    assert includes(SERVICES / "compose.yaml")[0] == "./volumes.compose.yaml"
+    for name, volume in declared.items():
+        assert volume["driver_opts"] == {
+            "type": "none", "o": "bind", "device": f"${{REPO_DIR:-${{PWD}}}}/datasets/_dockdrives/{name}",
+        }, name
+    used = set()
+    for group in GROUPS:
+        for path in service_files(group):
+            data = yaml.safe_load(path.read_text())
+            assert "volumes" not in data, f"{path.name}: declare volumes in services/volumes.compose.yaml"
+            for svc in data["services"].values():
+                used |= {v.split(":")[0] for v in svc.get("volumes", []) if not v.startswith((".", "/"))}
+    assert used == set(declared), f"used but not declared: {used - set(declared)}, unused: {set(declared) - used}"
 
 
 def test_env_example_covers_every_variable():
@@ -99,3 +116,35 @@ def test_resolve_rejects_unknown_targets():
 def test_profile_args_enable_only_needed_services():
     assert control.profile_args(["gitea", "postgres"], MODEL) == ["--profile", "gitea", "--profile", "postgres"]
     assert control.group(MODEL["gitrecon"]) == "gitrecon"
+
+
+def test_drive_volumes_and_paths(tmp_path):
+    services = {
+        "postgres": {"volumes": [{"type": "volume", "source": "postgres-data", "target": "/var/lib/postgresql/data"},
+                                 {"type": "bind", "source": "/x/init.sh", "target": "/init.sh"}]},
+        "crowdsec": {"volumes": [{"type": "volume", "source": "traefik-logs", "target": "/logs"}]},
+        "traefik": {"volumes": [{"type": "volume", "source": "traefik-logs", "target": "/var/log/traefik"}]},
+    }
+    assert control.drive_volumes(services) == {"postgres-data": ["postgres"], "traefik-logs": ["crowdsec", "traefik"]}
+    assert control.drive_volumes(services, ["postgres"]) == {"postgres-data": ["postgres"]}
+    assert control.drive_path({"driver_opts": {"device": "/r/datasets/_dockdrives/x"}}).name == "x"
+    assert control.drive_path({}) is None
+
+
+def test_folder_size_and_no_access(tmp_path):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "f").write_bytes(b"x" * 1000)
+    assert control.folder_size(tmp_path / "a") == 1000
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    locked.chmod(0)
+    try:
+        assert control.folder_size(locked) is None  # owned by a container user, as postgres does
+    finally:
+        locked.chmod(0o700)
+
+
+def test_repo_dir_points_at_the_repository():
+    assert control.ROOT == PROJECT_ROOT
+    assert control.DOCKDRIVES == PROJECT_ROOT / "datasets" / "_dockdrives"
+

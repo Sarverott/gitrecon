@@ -12,6 +12,3 @@ services:
       - "${BIND:-127.0.0.1}:${NTFY_PORT:-8090}:80"
     volumes:
       - ntfy-cache:/var/cache/ntfy
-
-volumes:
-  ntfy-cache:

@@ -98,10 +98,15 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 - Every service has `profiles: [<group>, <service>]`; start through `services/control.py`
   (`task services:up -- …`), which follows `depends_on` across groups. Databases are shared
   (`databases/`); new apps get a database via `POSTGRES_MULTIPLE_DATABASES`.
+- Volumes are declared only in `services/volumes.compose.yaml`, each a bind of
+  `${REPO_DIR:-${PWD}}/datasets/_dockdrives/<volume>`; service files just mount them by name.
+  `control.py up` creates the folders; `drives` checks, `backup` archives (via a container,
+  since services own their folders). Engine queries use the docker/podman SDK; compose
+  stays the CLI (the SDKs have no compose).
 - Publish ports as `${BIND:-127.0.0.1}:${<NAME>_PORT:-n}:n`; no `${VAR:?}` (one unset
   variable would break every compose command); defaults are dev passwords.
-- New service → its file, the group's `compose.yaml`, `NOTE.md`, and regenerate
-  `services/.env.example`; check with `docker compose --profile '*' config -q`.
+- New service → its file, the group's `compose.yaml`, `NOTE.md`, its volumes in
+  `volumes.compose.yaml`, and regenerate `services/.env.example`; check with `docker compose --profile '*' config -q`.
 - `app/` (not created yet, on purpose): the web interface, built later by others - do not
   write there. First the environment, the CLI and the terminal interface.
 
