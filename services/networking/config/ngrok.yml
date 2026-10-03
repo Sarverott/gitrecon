@@ -1,0 +1,9 @@
+# ngrok agent configuration; the auth token comes from NGROK_AUTHTOKEN.
+version: 3
+agent:
+  web_addr: 0.0.0.0:4040        # the inspector, routed by traefik as ngrok.<domain>
+tunnels:
+  gateway:
+    proto: http
+    addr: http://traefik:8000   # traefik's `public` entrypoint: only routers marked public answer
+    # domain: your-name.ngrok-free.app   # a fixed free domain from the ngrok dashboard

@@ -1,0 +1,16 @@
+# dnsmasq - DNS of the WireGuard bubble: *.gr.rs-tech.online -> traefik, container names ->
+# docker's DNS, the rest upstream. Rules: config/dnsmasq/gitrecon.conf. No published port:
+# only the project network and VPN peers use it.
+services:
+  dnsmasq:
+    image: dockurr/dnsmasq:latest
+    profiles: [networking, dnsmasq]
+    restart: unless-stopped
+    environment:
+      DNS1: ${DNS_UPSTREAM_1:-1.1.1.1}
+      DNS2: ${DNS_UPSTREAM_2:-9.9.9.9}
+    networks:
+      default:
+        ipv4_address: 172.30.0.53
+    volumes:
+      - ./config/dnsmasq:/etc/dnsmasq.d:ro

@@ -7,7 +7,9 @@ services:
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Etc/UTC}
-    ports:
-      - "${BIND:-127.0.0.1}:${HOME_ASSISTANT_PORT:-8123}:8123"
     volumes:
       - home-assistant-config:/config
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.home-assistant.rule: Host(`home.${DOMAIN:-gr.rs-tech.online}`) || Host(`home.localhost`)
+      traefik.http.services.home-assistant.loadbalancer.server.port: "8123"

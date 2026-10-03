@@ -113,6 +113,7 @@ nav:
           - glossary/output-mode.md
       - Environment:
           - glossary/services.md
+          - glossary/gateway.md
       - Delivery:
           - glossary/craft-loop.md
           - glossary/metadata-sync.md

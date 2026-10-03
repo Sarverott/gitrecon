@@ -6,9 +6,11 @@ services:
     restart: unless-stopped
     command: ["serve"]
     environment:
-      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8090}
+      NTFY_BASE_URL: https://ntfy.${DOMAIN:-gr.rs-tech.online}
       NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
-    ports:
-      - "${BIND:-127.0.0.1}:${NTFY_PORT:-8090}:80"
     volumes:
       - ntfy-cache:/var/cache/ntfy
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ntfy.rule: Host(`ntfy.${DOMAIN:-gr.rs-tech.online}`) || Host(`ntfy.localhost`)
+      traefik.http.services.ntfy.loadbalancer.server.port: "80"

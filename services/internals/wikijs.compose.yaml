@@ -14,5 +14,7 @@ services:
       DB_USER: wikijs
       DB_PASS: ${POSTGRES_PASSWORD:-gitrecon}
       DB_NAME: wikijs
-    ports:
-      - "${BIND:-127.0.0.1}:${WIKIJS_PORT:-3001}:3000"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.wikijs.rule: Host(`wiki.${DOMAIN:-gr.rs-tech.online}`) || Host(`wiki.localhost`)
+      traefik.http.services.wikijs.loadbalancer.server.port: "3000"

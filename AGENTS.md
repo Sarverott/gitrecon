@@ -103,10 +103,17 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   `control.py up` creates the folders; `drives` checks, `backup` archives (via a container,
   since services own their folders). Engine queries use the docker/podman SDK; compose
   stays the CLI (the SDKs have no compose).
-- Publish ports as `${BIND:-127.0.0.1}:${<NAME>_PORT:-n}:n`; no `${VAR:?}` (one unset
-  variable would break every compose command); defaults are dev passwords.
+- No published ports (only traefik, wireguard, transmission peers). A web service gets
+  traefik labels: `Host(\`<sub>.${DOMAIN:-gr.rs-tech.online}\`) || Host(\`<sub>.localhost\`)`, its
+  container port, and `vpn-only@file` for admin tools. Public (tunnels) only with an explicit
+  router on entrypoint `public`. Everything else is reached by name inside the network or
+  through the WireGuard bubble (dnsmasq). Main domain `gr.rs-tech.online` is persistent.
+- Gateway setup lives in `services/networking/config/` (traefik static/dynamic, dnsmasq,
+  ngrok); fixed addresses: traefik 172.30.0.10, dnsmasq .53, wireguard .2 (automatic: .128+).
+- No `${VAR:?}` (one unset variable would break every compose command); defaults are dev
+  passwords; `task services:env` regenerates `services/.env.example`.
 - New service → its file, the group's `compose.yaml`, `NOTE.md`, its volumes in
-  `volumes.compose.yaml`, and regenerate `services/.env.example`; check with `docker compose --profile '*' config -q`.
+  `volumes.compose.yaml`, its traefik labels, and `task services:env`; check with `docker compose --profile '*' config -q`.
 - `app/` (not created yet, on purpose): the web interface, built later by others - do not
   write there. First the environment, the CLI and the terminal interface.
 
