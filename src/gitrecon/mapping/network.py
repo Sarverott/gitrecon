@@ -9,8 +9,9 @@ Relations (edges of an ``ActivityGraph``):
 - ``repo  -fork_of->   repo``       (the upstream; its owner becomes a node too)
 
 Listings come from ``sources.repos`` (REST). Fork parents are not in those listings: they
-come from GraphQL, one query per 100 forks of an owner. Where GraphQL is refused (an
-organization that blocks classic tokens), that owner's forks simply have no ``fork_of`` edge.
+come from GraphQL, one query per 100 forks of an owner, with REST filling in the parents
+GraphQL hides. Where GitHub refuses the whole query (an organization that blocks classic
+tokens), that owner's forks have no ``fork_of`` edge and ``graph.notes`` says so.
 """
 
 from __future__ import annotations
@@ -39,38 +40,66 @@ FORK_PARENTS = """query($login: String!, $after: String) {
 }"""
 
 
-def fork_parents(owner: str, client: GitHubClient) -> dict[str, dict[str, str]]:
+def _rest_parent(full_name: str, client: GitHubClient) -> dict[str, str] | None:
+    """A fork's upstream through REST - it names the parent even where GraphQL hides it."""
+    try:
+        parent = (client.get(f"/repos/{full_name}").data or {}).get("parent")
+    except Exception:  # noqa: BLE001
+        return None
+    if not parent:
+        return None
+    return {"parent": parent["full_name"], "owner": parent["owner"]["login"],
+            "owner_type": parent["owner"].get("type", "User")}
+
+
+def fork_parents(owner: str, client: GitHubClient, notes: list[str] | None = None) -> dict[str, dict[str, str]]:
     """``{fork full name (lowercase): {"parent": full name, "owner": login, "owner_type": ...}}``.
 
-    Empty when there is no token or GitHub refuses the query for this owner.
+    GraphQL gives them 100 forks per query. It hides a parent that sits in an organization
+    refusing the token (the fork comes back with ``parent: null``); those are asked again
+    through REST, one request each. Empty without a token, or when GitHub refuses the whole
+    query for this owner - ``notes`` then says so.
     """
     if not client.config.github_token:
         return {}
     found: dict[str, dict[str, str]] = {}
+    without_parent: list[str] = []
     after = None
+
+    def refused() -> None:
+        if notes is not None:
+            notes.append(f"{owner}: upstreams of its forks unknown - GitHub refused the query for this token "
+                         "(a fine-grained token or app token for that organization shows them)")
+
     try:
         while True:
-            # partial: a fork whose upstream sits in an organization refusing the token comes back
-            # as null - keep the others
             data = client.graphql(FORK_PARENTS, {"login": owner, "after": after}, partial=True)["repositoryOwner"]
-            if data is None:
+            if data is None:  # the owner itself was refused (or does not exist)
+                refused()
                 break
             page = data["repositories"]
             for node in page["nodes"]:
                 if node is None:  # the fork itself was refused
                     continue
-                parent = node.get("parent")  # None: the upstream is private, gone or refused
+                parent = node.get("parent")
                 if parent:
                     found[node["nameWithOwner"].lower()] = {
                         "parent": parent["nameWithOwner"],
                         "owner": parent["owner"]["login"],
                         "owner_type": parent["owner"]["__typename"],
                     }
+                else:  # hidden by a token policy, private, or gone
+                    without_parent.append(node["nameWithOwner"])
             if not page["pageInfo"]["hasNextPage"]:
                 break
             after = page["pageInfo"]["endCursor"]
     except Exception as error:  # noqa: BLE001 - parents are an enrichment, never fatal
-        log.warning("no fork parents for %s: %s", owner, error)
+        log.info("no fork parents for %s: %s", owner, error)
+        refused()
+        return found
+    for full_name in without_parent:
+        if parent := _rest_parent(full_name, client):
+            found[full_name.lower()] = parent
     return found
 
 
@@ -106,14 +135,16 @@ def collect_network(
     graph.add_node(user)
 
     say(f"repositories of {username}")
-    _add_owner_repos(graph, user, repos.user_repos(username, client, privacy=privacy), fork_parents(username, client))
+    _add_owner_repos(graph, user, repos.user_repos(username, client, privacy=privacy),
+                     fork_parents(username, client, graph.notes))
 
     if include_orgs:
         for org in repos.user_orgs(username, client):
             say(f"organization {org['login']}")
             entity = Organization(login=org["login"], description=org["description"], raw=org)
             graph.link(user, MEMBER_OF, entity, org["login"])
-            _add_owner_repos(graph, entity, repos.org_repos(org["login"], client), fork_parents(org["login"], client))
+            _add_owner_repos(graph, entity, repos.org_repos(org["login"], client),
+                             fork_parents(org["login"], client, graph.notes))
     return graph
 
 

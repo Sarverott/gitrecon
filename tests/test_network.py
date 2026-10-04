@@ -125,3 +125,39 @@ def test_network_command(tmp_path, monkeypatch, client, capsys):
     assert "relations around sarverott" in out and "Sarverott" in out and "-> rattish" in out
     saved = (tmp_path / "networks" / "sarverott-owners.md").read_text()
     assert saved.startswith("# Network of sarverott (owners)\n\n```mermaid\nflowchart LR")
+
+
+# --- what GitHub hides, and what is said about it -----------------------------------------
+
+
+def test_hidden_parent_is_asked_again_through_rest():
+    """GraphQL hides an upstream in a token-refusing organization (parent: null); REST names it."""
+    session = FakeSession({
+        f"{API}/graphql": [parents_page([("Sarverott/csharpest", None, None)],
+                                        errors=["`The-Apokryf` forbids access via a personal access token (classic)."])],
+        f"{API}/repos/Sarverott/csharpest": [FakeResponse({"full_name": "Sarverott/csharpest", "parent": {
+            "full_name": "The-Apokryf/csharpest", "owner": {"login": "The-Apokryf", "type": "Organization"}}})],
+    })
+    client = GitHubClient(Config(github_token="t"), session=session)
+    assert fork_parents("sarverott", client) == {"sarverott/csharpest": {
+        "parent": "The-Apokryf/csharpest", "owner": "The-Apokryf", "owner_type": "Organization"}}
+
+
+def test_refused_owner_leaves_a_note_not_an_error():
+    refused = FakeResponse({"data": {"repositoryOwner": None}, "errors": [{"message": "forbids access"}]})
+    client = GitHubClient(Config(github_token="t"), session=FakeSession({f"{API}/graphql": [refused]}))
+    notes: list[str] = []
+    assert fork_parents("The-Apokryf", client, notes) == {}
+    assert len(notes) == 1 and notes[0].startswith("The-Apokryf: upstreams of its forks unknown")
+
+
+def test_token_refusal_is_warned_once_per_organization(caplog):
+    message = {"message": "`The-Apokryf` forbids access via a personal access token (classic). Please use ..."}
+    session = FakeSession({f"{API}/orgs/The-Apokryf/repos": [
+        FakeResponse(message, status=403), FakeResponse([], next_url=f"{API}/organizations/1/repos?page=2")],
+        f"{API}/organizations/1/repos": [FakeResponse(message, status=403), FakeResponse([])]})
+    client = GitHubClient(Config(github_token="t"), session=session)
+    with caplog.at_level("WARNING"):
+        list(client.paginate("/orgs/The-Apokryf/repos"))
+    assert client.anonymous_fallbacks == 2 and client.refusing_owners == {"The-Apokryf"}
+    assert len([r for r in caplog.records if "refuses classic tokens" in r.message]) == 1

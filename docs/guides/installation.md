@@ -41,6 +41,10 @@ is already set: `GITRECON_ENV_FILE`, the project's `.env`, then `__WORKSHOP/forg
 
 Both are git-ignored.
 
+> **Remember!** Output saved with `--save` goes to `data/` (network diagrams to `data/networks/`,
+> collected records to `data/raw/`, catalogs to `data/catalog/`), wherever you run the command
+> from. Clones are the exception: they go to the forge, `~/__WORKSHOP/forge/<user or org>/`.
+
 ## In a container
 
 No local Python needed - only Docker with Compose:
