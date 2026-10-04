@@ -1,3 +1,13 @@
+## v0.5.0 (2026-10-04)
+
+### BREAKING CHANGE
+
+- network parsing of github relativity
+
+### Feat
+
+- **network-generating-of-relations-across-github-entities**: mermaid graphs and relative nets - awsomness of activity inspection like true corpocratic intel investigator
+
 ## v0.4.1 (2026-10-04)
 
 ### Fix
