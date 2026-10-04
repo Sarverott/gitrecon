@@ -57,8 +57,10 @@ task docker:stop
 task docker:run -- menu                  # the interactive menu (commands and status)
 ```
 
-- The image is Python on Alpine with only the locked runtime dependencies and the `hub` extra
-  (~125 MB; `docker build --build-arg EXTRAS="" .` leaves the hub out: ~92 MB, no map push/pull).
+- The image is Python on Debian slim with git, `resources/` and the locked runtime dependencies
+  plus the `hub` extra. Its size follows the dependency list in `pyproject.toml` (about 950 MB
+  with chromadb, langchain and the other libraries currently in it; chromadb is also why the
+  base is not Alpine).
 - `./data` and `./datasets` are mounted, so the [[raw-buffer]] and the [[atlas]] stay on the host,
   written as your user.
 - Tokens (`GITHUB_TOKEN`/`GH_TOKEN`, `HF_TOKEN`) come from the environment; the `docker:*` tasks

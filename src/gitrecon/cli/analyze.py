@@ -88,6 +88,77 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.code import analyze_repo, find_repos
+
+    repos = [repo for path in args.path for repo in find_repos(path)]
+    if not repos:
+        out.note(f"no repository in {', '.join(args.path)} (a folder with .git, or a folder of such folders)")
+        return 2
+    results = []
+    for repo in repos:
+        if len(repos) > 1:
+            out.note(f"analysing {repo.name}")
+        results.append(analyze_repo(repo))
+
+    def text(r: dict) -> str:
+        lines = [f"{r['name']}  ({r['files']} files, main language: {r['main_language'] or '-'})"]
+        for name, e in list(r["languages"].items())[: args.limit]:
+            detail = f"code {e['code']:>6}  comments {e['comment']:>5}" if e.get("code") else f"lines {e['lines']:>6}"
+            lines.append(f"  {name:<18} {e['files']:>5} files {e['bytes'] / 1024:>9.1f} KiB  {detail}")
+        if r["frameworks"]:
+            lines.append("  frameworks & tools: " + ", ".join(r["frameworks"]))
+        if py := r.get("python"):
+            lines.append(f"  python: {py['functions']} functions, {py['classes']} classes, docstrings "
+                         f"{py['docstring_ratio']:.0%}; imports: {', '.join(list(py['imports'])[:10])}")
+        if r["names"]:
+            lines.append("  names: " + ", ".join(list(r["names"])[:15]))
+        if r["url_count"]:
+            lines.append(f"  links in code: {r['url_count']}")
+        return "\n".join(lines)
+
+    out.listing(results, text=text, data=lambda r: r, url=lambda r: None,
+                summary=f"-- {len(results)} repositories analysed" if len(results) > 1 else None)
+    if out.urls:
+        for url in dict.fromkeys(u for r in results for u in r["urls"]):
+            print(url)
+    return 0
+
+
+def cmd_gitgraph(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from collections import Counter
+    from pathlib import Path
+
+    from gitrecon.mapping import gitgraph
+
+    path = Path(args.path).expanduser().resolve()
+    commits = gitgraph.read_history(path, args.max_commits or None)
+    lanes = gitgraph.assign_lanes(commits, gitgraph.branch_tips(path))
+    diagram = gitgraph.git_graph(path, max_commits=args.max_commits or None, labels=args.labels)
+    per_lane = Counter(c.lane for c in commits)
+
+    def summary() -> str:
+        merges = sum(len(c.parents) > 1 for c in commits)
+        lines = [f"{path.name}: {len(commits)} commits, {merges} merges, {len(lanes)} lanes", ""]
+        lines += [f"  {per_lane[lane]:>5}  {lane}" for lane in lanes]
+        tagged = [f"{t} ({c.short})" for c in commits for t in c.tags]
+        if tagged:
+            lines += ["", "tags: " + ", ".join(tagged[-12:])]
+        return "\n".join(lines)
+
+    if args.save:
+        folder = config.data_dir / "gitgraphs"
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.md"
+        target.write_text(f"# Git graph of {path.name}\n\n```mermaid\n{diagram}```\n", encoding="utf-8")
+        out.note(f"saved {target}")
+    data = {"repository": str(path), "lanes": {lane: per_lane[lane] for lane in lanes},
+            "commits": [{"sha": c.sha, "parents": c.parents, "lane": c.lane, "time": c.time, "author": c.author,
+                         "subject": c.subject, "tags": c.tags} for c in commits]}
+    out.result(data, text=summary if args.format == "summary" else diagram.rstrip("\n"))
+    return 0
+
+
 def cmd_label(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.analysis import Labeler
 
@@ -149,6 +220,23 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--progress", dest="verbose_progress", action="store_true", help="say what is being collected")
     add_output_flags(p)  # --json: nodes, edges and the owner overview; --urls: every node's page
     p.set_defaults(func=cmd_network)
+
+    p = sub.add_parser("analyze", help="what cloned repositories are made of: languages, structure, frameworks")
+    p.add_argument("path", nargs="*", default=["."],
+                   help="repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default: .)")
+    p.add_argument("--limit", type=int, default=8, help="languages listed per repository")
+    add_output_flags(p)  # --json: the full analysis; --urls: links found in code and comments
+    p.set_defaults(func=cmd_analyze)
+
+    p = sub.add_parser("gitgraph", help="a cloned repository's history across all branches, as a Mermaid gitGraph")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["summary", "mermaid"], default="summary",
+                   help="summary of lanes (default) or the Mermaid script")
+    p.add_argument("--max-commits", type=int, default=150, help="draw the newest N commits (0: all)")
+    p.add_argument("--labels", action="store_true", help="show commit subjects next to the commits")
+    p.add_argument("--save", action="store_true", help="write the diagram to data/gitgraphs/<repository>.md")
+    add_output_flags(p, urls=False)  # --json: commits with their lanes
+    p.set_defaults(func=cmd_gitgraph)
 
     p = sub.add_parser("label", help="conclude labels from the raw buffer")
     p.add_argument("--source")

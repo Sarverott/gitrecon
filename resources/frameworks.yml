@@ -1,0 +1,158 @@
+# How frameworks and tools are recognised in a repository.
+#
+# manifests: dependency files - which ecosystem they belong to and how they are read
+#            (readers live in gitrecon.code.frameworks)
+# packages:  per ecosystem, package name -> what its presence means
+# files:     marker files or folders (glob, relative to the repository root) -> tool
+
+manifests:
+  package.json:      {ecosystem: npm, reader: json_keys, keys: [dependencies, devDependencies, peerDependencies]}
+  composer.json:     {ecosystem: composer, reader: json_keys, keys: [require, require-dev]}
+  pyproject.toml:    {ecosystem: pypi, reader: pyproject}
+  requirements*.txt: {ecosystem: pypi, reader: requirements}
+  Pipfile:           {ecosystem: pypi, reader: toml_keys, keys: [packages, dev-packages]}
+  Cargo.toml:        {ecosystem: cargo, reader: toml_keys, keys: [dependencies, dev-dependencies]}
+  go.mod:            {ecosystem: go, reader: gomod}
+  Gemfile:           {ecosystem: gems, reader: gemfile}
+
+packages:
+  npm:
+    react: React
+    react-dom: React
+    next: Next.js
+    vue: Vue
+    nuxt: Nuxt
+    svelte: Svelte
+    astro: Astro
+    "@angular/core": Angular
+    express: Express
+    fastify: Fastify
+    "@nestjs/core": NestJS
+    vite: Vite
+    webpack: webpack
+    electron: Electron
+    "@capacitor/core": Capacitor
+    "@nativescript/core": NativeScript
+    react-native: React Native
+    tailwindcss: Tailwind CSS
+    bootstrap: Bootstrap
+    typescript: TypeScript
+    eslint: ESLint
+    prettier: Prettier
+    jest: Jest
+    vitest: Vitest
+    mocha: Mocha
+    husky: husky
+    three: three.js
+    d3: D3
+    mermaid: Mermaid
+    puppeteer: Puppeteer
+    playwright: Playwright
+    socket.io: Socket.IO
+    mongoose: Mongoose
+    prisma: Prisma
+  pypi:
+    django: Django
+    flask: Flask
+    fastapi: FastAPI
+    starlette: Starlette
+    requests: requests
+    httpx: HTTPX
+    aiohttp: aiohttp
+    lark: Lark
+    rich: Rich
+    click: Click
+    typer: Typer
+    pytest: pytest
+    tox: tox
+    numpy: NumPy
+    pandas: pandas
+    scipy: SciPy
+    matplotlib: Matplotlib
+    torch: PyTorch
+    tensorflow: TensorFlow
+    transformers: Transformers
+    huggingface-hub: Hugging Face Hub
+    datasets: Hugging Face Datasets
+    chromadb: ChromaDB
+    ollama: Ollama
+    openai: OpenAI SDK
+    litellm: LiteLLM
+    notebook: Jupyter
+    marimo: marimo
+    mkdocs: MkDocs
+    mkdocs-material: MkDocs Material
+    sphinx: Sphinx
+    sqlalchemy: SQLAlchemy
+    pydantic: Pydantic
+    beautifulsoup4: Beautiful Soup
+    scrapy: Scrapy
+    selenium: Selenium
+    docker: Docker SDK
+    pyyaml: PyYAML
+    commitizen: Commitizen
+  composer:
+    laravel/framework: Laravel
+    symfony/framework-bundle: Symfony
+    symfony/console: Symfony Console
+    cakephp/cakephp: CakePHP
+    phpunit/phpunit: PHPUnit
+    slim/slim: Slim
+    livewire/livewire: Livewire
+  cargo:
+    tokio: Tokio
+    serde: Serde
+    actix-web: Actix Web
+    axum: Axum
+    clap: clap
+    rocket: Rocket
+    bevy: Bevy
+    tauri: Tauri
+  go:
+    github.com/gin-gonic/gin: Gin
+    github.com/gofiber/fiber: Fiber
+    github.com/spf13/cobra: Cobra
+    github.com/labstack/echo: Echo
+    gorm.io/gorm: GORM
+  gems:
+    rails: Rails
+    jekyll: Jekyll
+    sinatra: Sinatra
+    rspec: RSpec
+
+files:
+  Dockerfile: Docker
+  compose.yaml: Docker Compose
+  compose.yml: Docker Compose
+  docker-compose.yml: Docker Compose
+  docker-compose.yaml: Docker Compose
+  Taskfile.yml: Task
+  Taskfile.yaml: Task
+  Makefile: Make
+  CMakeLists.txt: CMake
+  .github/workflows: GitHub Actions
+  .gitlab-ci.yml: GitLab CI
+  .husky: husky
+  mkdocs.yml: MkDocs
+  docs/mkdocs.yml: MkDocs
+  .readthedocs.yaml: Read the Docs
+  artisan: Laravel
+  manage.py: Django
+  "astro.config.*": Astro
+  "vite.config.*": Vite
+  "next.config.*": Next.js
+  "capacitor.config.*": Capacitor
+  "tailwind.config.*": Tailwind CSS
+  tsconfig.json: TypeScript
+  uv.lock: uv
+  poetry.lock: Poetry
+  package-lock.json: npm
+  pnpm-lock.yaml: pnpm
+  yarn.lock: Yarn
+  Cargo.lock: Cargo
+  go.sum: Go modules
+  platformio.ini: PlatformIO
+  .obsidian: Obsidian
+  AGENTS.md: agent guide (AGENTS.md)
+  android/build.gradle: Android
+  ios/App: iOS

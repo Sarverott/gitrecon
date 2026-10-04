@@ -24,8 +24,11 @@ src/gitrecon/
 │                   feeds (RSS/Atom/RDF), rfc_index (RFC Editor index), blog (articles + feed discovery)
 ├── storage/        rawbuffer — append-only gzip JSONL, data/raw/<source>/<day>/<HH>.json.gz
 ├── mapping/        graph — ActivityGraph: entity nodes + evidenced edges; network — relations around a
-│                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON
+│                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON;
+│                   gitgraph — history across branches as a Mermaid gitGraph
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
+├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
+│                   analyze — all driven by resources/
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
 │                   user-namespace identities (namespace)
 ├── hub/            huggingface — MapDataset pull/push of Apokryf/minimap-of-uce
@@ -68,10 +71,22 @@ src/gitrecon/
 
 ## Container
 
-`Dockerfile` (python:3.12-alpine, two stages, only the venv is copied; `EXTRAS` build arg,
-hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
+`Dockerfile` (python:3.12-slim - chromadb's onnxruntime has no Alpine build; two stages, the
+venv and `resources/` are copied, git installed; `EXTRAS` build arg, hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
 under the `listen` profile). `.dockerignore` is an allow-list: pyproject, lock, README, src.
 Runtime-only dependencies stay minimal - anything not imported by `src/` belongs in a group.
+
+## Resources (resources/)
+
+- Knowledge is data: `languages.yml` (extensions, families, keywords), `frameworks.yml`
+  (manifests, packages, marker files), `grammars/` (Lark: `json.lark`, `lexical/<family>.lark`
+  with terminals COMMENT, STRING, NUMBER, NAME, OTHER). Read through
+  `gitrecon.config.resource()`; `GITRECON_RESOURCES` overrides the folder.
+- New language / framework / family = an edit there, not code; `tests/test_code.py` checks the
+  tables against each other. In YAML keyword lists quote `true`, `false`, `null`, `yes`, `no`, `on`.
+- `resources/locales/` and `resources/rss.json` are the user's, in progress: leave them.
+- Mermaid can be checked for real: `@mermaid-js/mermaid-cli` with a Chrome from
+  `~/.cache/puppeteer` (the snap Chromium cannot read /tmp).
 
 ## Cloning defaults
 

@@ -1,0 +1,14 @@
+// Lexical patterns of the C family: C, C++, C#, Java, Kotlin, Swift, Go, Rust, Dart,
+// JavaScript, TypeScript, PHP, CSS/SCSS and others with // and /* */ comments.
+start: (COMMENT | STRING | NUMBER | NAME | OTHER)*
+
+COMMENT.4: /\/\/[^\n]*/
+         | /\/\*[\s\S]*?\*\//
+STRING.3: /"(\\.|[^"\\\n])*"/
+        | /'(\\.|[^'\\\n])*'/
+        | /`(\\.|[^`\\])*`/
+NUMBER.2: /0[xX][0-9a-fA-F_]+|\d[\d_]*(\.\d+)?([eE][+-]?\d+)?/
+NAME.2: /[A-Za-z_$][A-Za-z0-9_$]*/
+OTHER.0: /[^\s]/
+
+%ignore /\s+/

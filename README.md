@@ -66,6 +66,9 @@ gitrecon stars sarverott --json | jq '.[].url'
 gitrecon events org:github --watch --json      # JSON Lines, live
 gitrecon label --name star-burst --urls
 
+gitrecon analyze ~/__WORKSHOP/forge/rattish    # languages, lines, names, frameworks of cloned repos
+gitrecon gitgraph . --format mermaid --save    # history across branches as a Mermaid gitGraph
+
 # look
 gitrecon status                     # what is in the raw buffer
 gitrecon map                        # graph summary: nodes, relations, hubs
