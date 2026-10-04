@@ -1,3 +1,25 @@
+## v0.5.1 (2026-10-04)
+
+### Fix
+
+- **adding-handling-of-forbidden-by-setup-of-security-data-with-information-of-count-hidden-positions-instead**: looks great works great and even have readable docs
+
+## v0.5.0 (2026-10-04)
+
+### BREAKING CHANGE
+
+- network parsing of github relativity
+
+### Feat
+
+- **network-generating-of-relations-across-github-entities**: mermaid graphs and relative nets - awsomness of activity inspection like true corpocratic intel investigator
+
+## v0.4.1 (2026-10-04)
+
+### Fix
+
+- **adding-default-output-paths,-adding-diagram-in-mermaid**: for laziness and visual pleasure
+
 ## v0.4.0 (2026-10-03)
 
 ### BREAKING CHANGE
