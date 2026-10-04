@@ -38,6 +38,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 | Element | One line |
 | --- | --- |
 | [Entity](entity.md) | Anything gitrecon can map, with a kind and a stable key. |
+| [Network](network.md) | Repositories, users and organizations around one user, as a graph of relations. |
 | [Activity graph](activity-graph.md) | Who touches what: entities as nodes, observed relations as edges with evidence. |
 | [Label](label.md) | A conclusion about an entity: what is happening, how sure, and why. |
 | [Labeler](labeler.md) | Groups activity per entity and runs every rule over it. |

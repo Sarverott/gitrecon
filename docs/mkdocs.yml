@@ -74,6 +74,7 @@ nav:
       - guides/documentation.md
   - Devlog:
       - devlog/scrapnote-1791014945204.md
+      - devlog/scrapnote-1791134376269.md
   - Glossary:
       - glossary/README.md
       - Collecting:
@@ -91,6 +92,7 @@ nav:
       - Recognizing:
           - glossary/entity.md
           - glossary/activity-graph.md
+          - glossary/network.md
           - glossary/label.md
           - glossary/labeler.md
           - glossary/rule.md
