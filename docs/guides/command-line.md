@@ -7,6 +7,19 @@ them all as forms - see [[menu]]. Grouped by what they do.
 addresses, one per line) - see [[integration]] for the shapes. Example:
 `gitrecon stars sarverott --urls`.
 
+> **Remember!** `--save` never writes into the folder you are standing in. Everything gitrecon
+> saves lands in its data folder - `data/` in the repository, or wherever `GITRECON_DATA` points:
+>
+> | Saved by | Lands in |
+> | --- | --- |
+> | `network USER --save` | `data/networks/<user>-<level>.md` (a Mermaid diagram in markdown) |
+> | `events`, `gists`, `archive`, `stars --save`, `feeds --save`, `blog --save` | `data/raw/<source>/<day>/` |
+> | `links --save`, `rfc --save` | `data/catalog/` |
+> | `digest`, `posts` | `data/digests/`, `data/posts/` |
+>
+> Each command prints `saved <path>` when it does. Only the clone commands differ: they write
+> to the forge (`~/__WORKSHOP/forge/<user or org>/`) or the path you give.
+
 ## Collect
 
 | Command | Does |

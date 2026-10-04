@@ -22,6 +22,7 @@ class ActivityGraph:
     nodes: dict[str, Entity] = field(default_factory=dict)
     # edge -> ids of the events/gists that evidence it
     edges: dict[Edge, list[str]] = field(default_factory=lambda: defaultdict(list))
+    notes: list[str] = field(default_factory=list)  # what could not be seen while building it
 
     def add_node(self, entity: Entity) -> str:
         # Keep the richest version seen: full API payloads beat short event stubs.

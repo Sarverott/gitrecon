@@ -27,6 +27,15 @@ def _forbids_classic_token(r: requests.Response) -> bool:
     return "forbids access via a personal access token (classic)" in message
 
 
+def _owner_in(r: requests.Response) -> str | None:
+    """The organization named in GitHub's refusal: `The-Apokryf` forbids access via ..."""
+    try:
+        match = re.match(r"`([^`]+)` forbids access", (r.json() or {}).get("message", ""))
+    except ValueError:
+        return None
+    return match.group(1) if match else None
+
+
 def _is_secondary_limit(r: requests.Response) -> bool:
     if "Retry-After" in r.headers:
         return True
@@ -75,6 +84,7 @@ class GitHubClient:
     config: Config = field(default_factory=Config)
     wait_on_limit: bool = True
     anonymous_fallbacks: int = 0  # requests repeated without the token (orgs refusing classic tokens)
+    refusing_owners: set[str] = field(default_factory=set)  # organizations that refused the token
     rate: RateLimit = field(default_factory=RateLimit)
     session: requests.Session = field(default_factory=lambda: requests.Session())
 
@@ -122,8 +132,11 @@ class GitHubClient:
                 continue
             if r.status_code == 403 and "Authorization" not in headers and _forbids_classic_token(r):
                 # an organization that refuses classic tokens still shows its public data anonymously
-                log.warning("%s refuses classic tokens - retrying without one (public data only)",
-                            url.split("?")[0])
+                owner = _owner_in(r) or url.split("?")[0]
+                if owner not in self.refusing_owners:  # say it once per organization, not per page
+                    self.refusing_owners.add(owner)
+                    log.warning("%s refuses classic tokens: its public data is read without the token "
+                                "(private data needs a fine-grained token or a GitHub/OAuth App)", owner)
                 headers["Authorization"] = None  # None drops the session's header for this request
                 self.anonymous_fallbacks += 1
                 continue
@@ -158,7 +171,8 @@ class GitHubClient:
             messages = sorted({e.get("message", str(e)) for e in body["errors"]})
             if not partial or not body.get("data"):
                 raise RuntimeError("; ".join(messages))
-            log.warning("GraphQL answered partly (%d refused): %s", len(body["errors"]), "; ".join(messages))
+            # expected with partial=True (the caller deals with the gaps): not worth a warning
+            log.info("GraphQL answered partly (%d refused): %s", len(body["errors"]), "; ".join(messages))
         return body["data"]
 
     def count(self, path: str) -> int:
