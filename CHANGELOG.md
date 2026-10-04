@@ -1,3 +1,9 @@
+## v0.5.1 (2026-10-04)
+
+### Fix
+
+- **adding-handling-of-forbidden-by-setup-of-security-data-with-information-of-count-hidden-positions-instead**: looks great works great and even have readable docs
+
 ## v0.5.0 (2026-10-04)
 
 ### BREAKING CHANGE
