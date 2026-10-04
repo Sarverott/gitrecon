@@ -5,7 +5,9 @@ gitrecon analyze                                  # the repository you are in
 gitrecon analyze ~/__WORKSHOP/forge/rattish       # every repository in a folder
 gitrecon analyze PATH --json                      # everything, for programs
 gitrecon analyze PATH --urls                      # links found in code and comments
+gitrecon analyze PATH --deep                      # CaptorLex step 1: functions, methods, classes per language
 gitrecon analyze PATH --no-save                   # only print, keep nothing
+gitrecon commits PATH                             # its commit messages as records and labels
 gitrecon gitgraph PATH --format mermaid --save    # its history as a Mermaid gitGraph
 ```
 
@@ -25,16 +27,19 @@ Python structure and the links it met. See [[code-analysis]] and [[git-graph]].
 >
 > A repository without an `origin` remote goes to the raw buffer only. `--no-save` keeps nothing.
 
-> **Remember!** The map is published by `gitrecon atlas push`. The clone commands keep
-> private repositories out of it; a plain `gitrecon analyze` cannot know whether a repository
-> is private - use `--no-save` there, or look at the map folder before pushing.
+> **Remember!** The map is published by `gitrecon atlas push`, so only repositories GitHub
+> shows as public are written to it. `analyze` asks GitHub once per repository; private
+> ones, ones on other platforms and ones it cannot ask about (no network) go to the raw
+> buffer only. `--map-priv-repos` writes them to the map as well (`analyze`, `repo-clone`,
+> `org-clone`).
 
 `repo-clone` and `org-clone` analyse what they clone and save it the same way; each clone's
 line then ends with `[language, files; frameworks]`. `--no-analysis` only clones - for mass
 management of git data where reading the code is not wanted.
 
-The reading done here is [[peekerlex]]: quick and light. The deep reading, [[captorlex]], is
-planned.
+The reading done by default is [[peekerlex]]: quick and light. `--deep` adds the first step of
+[[captorlex]]: what each file defines, through tree-sitter (the `code` extra; a language's
+grammar is downloaded the first time it is met).
 
 ## Teaching it more
 
@@ -47,6 +52,7 @@ Everything it knows is in `resources/` - no code changes needed for:
 | a framework known by its package | `resources/frameworks.yml` → `packages:` under its ecosystem |
 | a tool known by a file | `resources/frameworks.yml` → `files:` (a glob from the repository root) |
 | a dependency file | `resources/frameworks.yml` → `manifests:` (a reader from `gitrecon.code.frameworks`) |
+| deep reading for a language | `resources/languages.yml` -> `structure:` (a tree-sitter grammar name) |
 | a language family | `resources/grammars/lexical/<family>.lark` with `COMMENT`, `STRING`, `NUMBER`, `NAME`, `OTHER` + a `families:` entry |
 
 `task test` checks the tables against each other: every family has a grammar with the five

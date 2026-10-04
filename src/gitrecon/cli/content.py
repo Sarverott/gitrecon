@@ -81,7 +81,8 @@ def cmd_text(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.text import markdown, tokenizer
     from gitrecon.text.rat import build_rat
 
-    md_text = markdown.fetch_text(args.url)
+    local = Path(args.url).expanduser()
+    md_text = local.read_text(encoding="utf-8") if local.is_file() else markdown.fetch_text(args.url)
     match args.action:
         case "toc":
             html = markdown.render_toc(md_text)
@@ -89,11 +90,58 @@ def cmd_text(args: argparse.Namespace, config: Config, out: Output) -> int:
         case "tokens":
             sentences = tokenizer.text_to_tokenchain_sentences(markdown.md_to_text(md_text))
             out.result(sentences, text=lambda: dumps(sentences))  # data either way
+        case "requirements":
+            from gitrecon.humanish.requirements import find_requirements, summarize_requirements
+
+            found = find_requirements(md_text if args.raw else markdown.md_to_text(md_text))
+            out.listing(found, text=lambda r: f"{r.level:<14} line {r.line:<5} {r.sentence}", data=lambda r: r.to_json(),
+                        url=lambda r: None,
+                        summary="-- " + (", ".join(f"{n} {level}" for level, n in summarize_requirements(found).items())
+                                         or "no requirement keywords (MUST, SHOULD, MAY ... in capitals)"))
         case "rat":
             build = build_rat(markdown.md_to_text(md_text))
             out.result({"url": args.url, "size": len(build.script), "lines": build.lines,
                         "glossary": dict(build.glossary), "script": build.script}, text=build.script)
             out.note(f"-- RAT size {len(build.script)}, lines {build.lines}")
+    return 0
+
+
+def cmd_translate(args: argparse.Namespace, config: Config, out: Output) -> int:
+    import sys
+
+    from gitrecon.translate import argos
+
+    try:
+        match args.action:
+            case "languages":
+                if args.available:
+                    out.listing(argos.available_packages(), data=lambda p: p, url=lambda p: None,
+                                text=lambda p: f"{p['from']:<4} -> {p['to']:<4} {p['from_name']} -> {p['to_name']}",
+                                summary=lambda found: f"-- {len(found)} directions in the Argos index; "
+                                                      "install one: gitrecon translate install FROM TO")
+                else:
+                    out.listing(argos.installed_languages(), data=lambda entry: entry, url=lambda entry: None,
+                                text=lambda e: f"{e['code']:<4} {e['name']:<22} -> {', '.join(e['to']) or '-'}",
+                                summary=lambda found: f"-- {len(found)} languages installed"
+                                                      + ("" if found else "; see: gitrecon translate languages --available"))
+            case "install":
+                if len(args.words) != 2:
+                    out.note("usage: gitrecon translate install FROM TO   (language codes, e.g. en pl)")
+                    return 2
+                out.note(f"installing {args.words[0]} -> {args.words[1]} (a download of about 100 MB the first time)")
+                done = argos.install(*args.words)
+                out.result(done, text=f"{done['status']}: {done['from_name']} -> {done['to_name']}")
+            case "text":
+                if not (args.source and args.to):
+                    out.note("usage: gitrecon translate text --from CODE --to CODE [WORDS... | - for stdin]")
+                    return 2
+                text = sys.stdin.read() if args.words in ([], ["-"]) else " ".join(args.words)
+                translated = argos.translate(text, args.source, args.to)
+                out.result({"from": args.source, "to": args.to, "text": text, "translation": translated},
+                           text=translated)
+    except (RuntimeError, LookupError) as error:
+        out.note(str(error))
+        return 1
     return 0
 
 
@@ -114,8 +162,18 @@ def register(sub: argparse._SubParsersAction) -> None:
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_posts)
 
-    p = sub.add_parser("text", help="markdown/tokenizer/RAT experiments on a URL")
-    p.add_argument("action", choices=["toc", "tokens", "rat"])
-    p.add_argument("url", nargs="?", default="https://taskfile.dev/llms.txt")
+    p = sub.add_parser("text", help="markdown/tokenizer/RAT experiments and requirement sentences of a URL or file")
+    p.add_argument("action", choices=["toc", "tokens", "rat", "requirements"])
+    p.add_argument("url", nargs="?", default="https://taskfile.dev/llms.txt", help="a URL or a local file")
+    p.add_argument("--raw", action="store_true", help="requirements: the text is plain (an RFC .txt), not markdown")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_text)
+
+    p = sub.add_parser("translate", help="offline translation with Argos Translate: text, languages, install")
+    p.add_argument("action", choices=["text", "languages", "install"])
+    p.add_argument("words", nargs="*", help="text: the words (or - for stdin); install: FROM TO language codes")
+    p.add_argument("--from", dest="source", help="text: source language code, e.g. en")
+    p.add_argument("--to", help="text: target language code, e.g. pl")
+    p.add_argument("--available", action="store_true", help="languages: what the Argos index offers, not what is installed")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_translate)

@@ -5,7 +5,8 @@
 - map: ``<map>/data-heuristicality/code-analysis/<platform>/<owner>/<repository>.json`` - the
   same without what is local (the path on this machine) or changes on every run (the time),
   so the file changes only when the repository does. Only for repositories whose ``origin``
-  names a platform, an owner and a name; never for one known to be private.
+  names a platform, an owner and a name. Private repositories (and those that cannot be shown
+  public) stay out unless the caller asks otherwise (``--map-priv-repos``).
 """
 
 from __future__ import annotations
@@ -40,6 +41,29 @@ def describe(result: dict[str, Any]) -> dict[str, Any]:
     result["origin"] = origin(result["path"])
     result["commit"] = _git(result["path"], "rev-parse", "HEAD") or None
     return result
+
+
+def not_public(results: list[dict[str, Any]], client: Any) -> set[str]:
+    """Lowercase ``owner/name`` of analysed repositories that are private - or cannot be shown public.
+
+    One request per repository on github.com (``GET /repos/{owner}/{name}`` -> ``private``).
+    Anything else counts as not public: another platform, no answer, no network.
+    """
+    hidden: set[str] = set()
+    for result in results:
+        source = result.get("origin")
+        if not source:
+            continue
+        full_name = f"{source['owner']}/{source['name']}"
+        public = False
+        if source["platform"].lower() == "github.com":
+            try:
+                public = (client.get(f"/repos/{full_name}").data or {}).get("private") is False
+            except Exception:  # noqa: BLE001 - unknown is treated as private
+                public = False
+        if not public:
+            hidden.add(full_name.lower())
+    return hidden
 
 
 def map_path(map_root: Path, source: dict[str, str]) -> Path:

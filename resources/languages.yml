@@ -4,7 +4,8 @@
 #            (left out of identifier statistics); quote true/false/null/yes/no/on - YAML
 #            reads them as booleans otherwise
 # languages: extensions and exact file names; `family` for languages the lexer can read,
-#            `kind` says what the files are: code (default) | markup | data | prose | config
+#            `kind` says what the files are: code (default) | markup | data | prose | config;
+#            `structure` names the tree-sitter grammar CaptorLex reads the language with
 
 families:
   c_family:
@@ -33,33 +34,33 @@ families:
                name, content, rel, alt, width, height, template, slot]
 
 languages:
-  Python:      {family: python, extensions: [.py, .pyi, .pyw]}
+  Python:      {structure: python, family: python, extensions: [.py, .pyi, .pyw]}
   Jupyter Notebook: {kind: data, extensions: [.ipynb]}
-  JavaScript:  {family: c_family, extensions: [.js, .mjs, .cjs, .jsx]}
-  TypeScript:  {family: c_family, extensions: [.ts, .tsx, .mts, .cts]}
-  PHP:         {family: c_family, extensions: [.php, .ctp, .phtml]}
-  C:           {family: c_family, extensions: [.c, .h]}
-  C++:         {family: c_family, extensions: [.cpp, .cc, .cxx, .hpp, .hh, .ino]}
-  C#:          {family: c_family, extensions: [.cs]}
-  Java:        {family: c_family, extensions: [.java]}
-  Kotlin:      {family: c_family, extensions: [.kt, .kts]}
-  Swift:       {family: c_family, extensions: [.swift]}
-  Go:          {family: c_family, extensions: [.go]}
+  JavaScript:  {structure: javascript, family: c_family, extensions: [.js, .mjs, .cjs, .jsx]}
+  TypeScript:  {structure: typescript, family: c_family, extensions: [.ts, .tsx, .mts, .cts]}
+  PHP:         {structure: php, family: c_family, extensions: [.php, .ctp, .phtml]}
+  C:           {structure: c, family: c_family, extensions: [.c, .h]}
+  C++:         {structure: cpp, family: c_family, extensions: [.cpp, .cc, .cxx, .hpp, .hh, .ino]}
+  C#:          {structure: csharp, family: c_family, extensions: [.cs]}
+  Java:        {structure: java, family: c_family, extensions: [.java]}
+  Kotlin:      {structure: kotlin, family: c_family, extensions: [.kt, .kts]}
+  Swift:       {structure: swift, family: c_family, extensions: [.swift]}
+  Go:          {structure: go, family: c_family, extensions: [.go]}
   Go Module:   {kind: config, filenames: [go.mod, go.sum]}
-  Rust:        {family: c_family, extensions: [.rs]}
-  Dart:        {family: c_family, extensions: [.dart]}
-  Scala:       {family: c_family, extensions: [.scala]}
-  Groovy:      {family: c_family, extensions: [.groovy, .gradle]}
-  Solidity:    {family: c_family, extensions: [.sol]}
+  Rust:        {structure: rust, family: c_family, extensions: [.rs]}
+  Dart:        {structure: dart, family: c_family, extensions: [.dart]}
+  Scala:       {structure: scala, family: c_family, extensions: [.scala]}
+  Groovy:      {structure: groovy, family: c_family, extensions: [.groovy, .gradle]}
+  Solidity:    {structure: solidity, family: c_family, extensions: [.sol]}
   CSS:         {family: c_family, extensions: [.css, .scss, .sass, .less]}
-  Shell:       {family: hash_family, extensions: [.sh, .bash, .zsh, .fish], filenames: [.bashrc, .zshrc]}
-  PowerShell:  {family: hash_family, extensions: [.ps1, .psm1]}
+  Shell:       {structure: bash, family: hash_family, extensions: [.sh, .bash, .zsh, .fish], filenames: [.bashrc, .zshrc]}
+  PowerShell:  {structure: powershell, family: hash_family, extensions: [.ps1, .psm1]}
   Batch:       {extensions: [.bat, .cmd]}
-  Ruby:        {family: hash_family, extensions: [.rb, .rake, .gemspec], filenames: [Gemfile, Rakefile]}
-  Perl:        {family: hash_family, extensions: [.pl, .pm]}
-  R:           {family: hash_family, extensions: [.r, .R]}
-  Elixir:      {family: hash_family, extensions: [.ex, .exs]}
-  Nim:         {family: hash_family, extensions: [.nim]}
+  Ruby:        {structure: ruby, family: hash_family, extensions: [.rb, .rake, .gemspec], filenames: [Gemfile, Rakefile]}
+  Perl:        {structure: perl, family: hash_family, extensions: [.pl, .pm]}
+  R:           {structure: r, family: hash_family, extensions: [.r, .R]}
+  Elixir:      {structure: elixir, family: hash_family, extensions: [.ex, .exs]}
+  Nim:         {structure: nim, family: hash_family, extensions: [.nim]}
   Dockerfile:  {family: hash_family, kind: config, extensions: [.dockerfile], filenames: [Dockerfile, Containerfile]}
   Makefile:    {family: hash_family, kind: config, extensions: [.mk], filenames: [Makefile, makefile, GNUmakefile]}
   CMake:       {family: hash_family, kind: config, extensions: [.cmake], filenames: [CMakeLists.txt]}
@@ -67,9 +68,9 @@ languages:
   TOML:        {family: hash_family, kind: config, extensions: [.toml]}
   INI:         {kind: config, extensions: [.ini, .cfg, .conf, .env, .properties]}
   SQL:         {family: dash_family, extensions: [.sql]}
-  Lua:         {family: dash_family, extensions: [.lua]}
-  Haskell:     {family: dash_family, extensions: [.hs]}
-  Elm:         {family: dash_family, extensions: [.elm]}
+  Lua:         {structure: lua, family: dash_family, extensions: [.lua]}
+  Haskell:     {structure: haskell, family: dash_family, extensions: [.hs]}
+  Elm:         {structure: elm, family: dash_family, extensions: [.elm]}
   HTML:        {family: markup, kind: markup, extensions: [.html, .htm, .xhtml]}
   XML:         {family: markup, kind: markup, extensions: [.xml, .xsd, .xsl, .plist]}
   SVG:         {family: markup, kind: markup, extensions: [.svg]}

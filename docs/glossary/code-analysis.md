@@ -5,7 +5,7 @@
 ## What it is
 
 Two depths of reading: [[peekerlex]] (quick and light - everything below except the Python
-structure) and [[captorlex]] (deep - planned; Python's `ast` is its first piece). The layers,
+structure) and [[captorlex]] (deep - `--deep` adds its first step, structure through tree-sitter). The layers,
 all driven by tables and grammars in `resources/` rather than by code:
 
 - **languages** - a file's language by extension or name (`resources/languages.yml`);
@@ -30,7 +30,7 @@ all driven by tables and grammars in `resources/` rather than by code:
 
 By default both: the raw buffer (`data/raw/analysis/`, every run appended) and the map dataset
 (`datasets/imperialmap/data-heuristicality/code-analysis/<platform>/<owner>/<repository>.json`,
-rewritten only when the repository changed). `gitrecon analyze --no-save` only prints;
+rewritten only when the repository changed). Private repositories stay out of the map unless `--map-priv-repos`. `gitrecon analyze --no-save` only prints;
 `repo-clone` / `org-clone` analyse what they clone unless `--no-analysis`.
 
 ## Relations

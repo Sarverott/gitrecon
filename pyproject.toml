@@ -108,13 +108,3 @@ tag_format = "v$version"
 update_changelog_on_bump = true
 major_version_zero = true
 pre_bump_hooks = ["task sync"]
-
-# torch arrives only through the translate extra (stanza splits sentences); the CPU build is
-# enough for that and about 4 GB smaller than the default CUDA one
-[tool.uv.sources]
-torch = [{ index = "pytorch-cpu" }]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true

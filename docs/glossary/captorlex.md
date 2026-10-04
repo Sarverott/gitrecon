@@ -1,14 +1,15 @@
 # CaptorLex
 
-> The deep reading of code: structure first, then meaning, reasoning and sense. *Planned.*
+> The deep reading of code: structure first, then meaning, reasoning and sense. *Step 1 built.*
 
 ## What it is
 
 Where [[peekerlex]] peeks, CaptorLex captures - in steps, each broader than the last:
 
-1. **structure** - a real syntax tree per file: functions, classes, imports, calls, who calls
-   whom. For Python this exists already through the standard `ast` (`gitrecon.code.pyast`);
-   for other languages the candidate is tree-sitter (compiled grammars for ~100 languages);
+1. **structure** *(built)* - a real syntax tree per file: what is defined - functions,
+   methods, classes, structs, interfaces, traits. Through tree-sitter for 26 languages (the
+   `structure:` key in `resources/languages.yml`), and through the standard `ast` for Python
+   (imports, decorators, docstrings);
 2. **relations** - across files and repositories: which module uses which, the same code in
    several repositories, forks that diverged;
 3. **meaning** - what a piece of code is *for*: needs language models (the `llm` extra) reading
@@ -16,7 +17,8 @@ Where [[peekerlex]] peeks, CaptorLex captures - in steps, each broader than the 
 
 ## Where
 
-Today only step 1 for Python: `gitrecon.code.pyast`. The rest is not built.
+Step 1: `gitrecon.code.structure` (tree-sitter; the `code` extra) and `gitrecon.code.pyast`;
+`gitrecon analyze --deep`. A grammar is downloaded on first use and cached. Steps 2-3 are not built.
 
 ## Relations
 

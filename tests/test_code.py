@@ -224,10 +224,56 @@ def test_analyze_command_saves_unless_told_not_to(repo, capsys, monkeypatch, tmp
     (tmp_path / "ds" / "imperialmap").mkdir(parents=True)
     assert main(["analyze", str(repo), "--no-save"]) == 0
     assert not (tmp_path / "d").exists() and "saved:" not in capsys.readouterr().out
+    in_map = (tmp_path / "ds" / "imperialmap" / "data-heuristicality" / "code-analysis" / "github.com" / "rattish"
+              / "shop.json")
+    # offline nobody can show the repository is public: buffered, but kept out of the map
     assert main(["analyze", str(repo), "--json"]) == 0
     captured = capsys.readouterr()
     assert json.loads(captured.out)[0]["origin"]["name"] == "Shop"
     assert "saved: 1 to the raw buffer" in captured.err                 # notes leave stdout to the data
+    assert "kept out of the map" in captured.err and not in_map.exists()
     assert list((tmp_path / "d" / "raw" / "analysis").rglob("*.json.gz"))
-    assert (tmp_path / "ds" / "imperialmap" / "data-heuristicality" / "code-analysis" / "github.com" / "rattish"
-            / "shop.json").exists()
+    # shown public by GitHub: mapped
+    monkeypatch.setattr("gitrecon.code.store.not_public", lambda results, client: set())
+    assert main(["analyze", str(repo)]) == 0 and in_map.exists()
+    in_map.unlink()
+    # and the explicit switch writes without asking anybody
+    monkeypatch.undo()
+    monkeypatch.setenv("GITRECON_DATA", str(tmp_path / "d"))
+    monkeypatch.setenv("GITRECON_DATASETS", str(tmp_path / "ds"))
+    assert main(["analyze", str(repo), "--map-priv-repos"]) == 0 and in_map.exists()
+
+
+def test_not_public_asks_github_and_distrusts_everything_else():
+    from types import SimpleNamespace
+
+    from gitrecon.code.store import not_public
+
+    class Client:
+        def get(self, path):
+            if path == "/repos/A/open":
+                return SimpleNamespace(data={"private": False})
+            if path == "/repos/A/closed":
+                return SimpleNamespace(data={"private": True})
+            raise RuntimeError("404")
+
+    origin_of = lambda platform, name: {"origin": {"platform": platform, "owner": "A", "name": name}}  # noqa: E731
+    results = [origin_of("github.com", "open"), origin_of("github.com", "closed"), origin_of("github.com", "gone"),
+               origin_of("gitea.example.org", "elsewhere"), {"origin": None}]
+    assert not_public(results, Client()) == {"a/closed", "a/gone", "a/elsewhere"}
+
+
+def test_structure_through_tree_sitter(tmp_path):
+    pack = pytest.importorskip("tree_sitter_language_pack")
+    if "javascript" not in pack.downloaded_languages():
+        pytest.skip("the javascript grammar is not downloaded (first use needs the network)")
+    from gitrecon.code import structure
+
+    stats = structure.Structure()
+    structure.add_file(stats, "class A { m(a) { return a } }\nfunction f() {}\n", "javascript")
+    structure.add_file(stats, "anything", "no-such-grammar")
+    assert stats.to_json() == {"files": 2, "unread": 1, "parse_errors": 0,
+                               "defined_kinds": {"class": 1, "function": 1, "method": 1}, "defined": ["A", "m", "f"]}
+    (tmp_path / "app.js").write_text("function mount() {}\n")
+    assert analyze_repo(tmp_path, deep=True)["structure"]["JavaScript"]["defined_kinds"] == {"function": 1}
+    assert "structure" not in analyze_repo(tmp_path)

@@ -68,6 +68,8 @@ gitrecon label --name star-burst --urls
 
 gitrecon analyze ~/__WORKSHOP/forge/rattish    # languages, lines, names, frameworks of cloned repos
 gitrecon gitgraph . --format mermaid --save    # history across branches as a Mermaid gitGraph
+gitrecon commits .                             # commit messages as records and labels
+gitrecon translate text --from en --to pl "hello"   # offline, after: gitrecon translate install en pl
 
 # look
 gitrecon status                     # what is in the raw buffer

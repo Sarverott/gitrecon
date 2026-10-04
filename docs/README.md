@@ -20,6 +20,7 @@ findings into a shared map dataset, and can draft articles from summaries of the
 | [[environment]] | the environment: databases, gitea, ollama, automations, networking, runners |
 | [[collecting-activity]] | collect events, map them, conclude labels |
 | [[analysing-code]] | what cloned repositories are made of; git history as a diagram |
+| [[reading-text]] | commit messages and requirement sentences as records; offline translation |
 | [[map-dataset]] | refresh and publish the map on Hugging Face |
 | [[writing-a-label-rule]] | add a new label |
 | [[committing-and-releasing]] | commits, the craft loop, releases |

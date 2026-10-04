@@ -29,6 +29,8 @@ src/gitrecon/
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
+├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
+├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
 │                   user-namespace identities (namespace)
 ├── hub/            huggingface — MapDataset pull/push of Apokryf/minimap-of-uce
@@ -78,18 +80,30 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 
 ## Reading code: PeekerLex and CaptorLex
 
-- **PeekerLex** = the quick reading that exists (`gitrecon.code`: lexers, tables, manifests).
-  **CaptorLex** = the deep reading (structure -> relations -> meaning), planned; only Python
-  `ast` exists. The user's names: use them.
+- **PeekerLex** = the quick reading (`gitrecon.code`: lexers, tables, manifests).
+  **CaptorLex** = the deep reading (structure -> relations -> meaning); step 1 exists:
+  `gitrecon.code.structure` (tree-sitter, `code` extra, `analyze --deep`) and `pyast`.
+  The user's names: use them.
 - Results are kept by default in both the raw buffer (`data/raw/analysis/`) and the map
   (`data-heuristicality/code-analysis/<platform>/<owner>/<repo>.json`, `gitrecon.code.store`);
-  `analyze --no-save`, clone commands `--no-analysis`. Private repositories never go to the map.
+  `analyze --no-save`, clone commands `--no-analysis`. Only repositories GitHub shows public go
+  to the map (`store.not_public`); `--map-priv-repos` writes the others too.
 - No Rattish grammar here: it belongs to the rattish project (`forge/rattish/rattish/TODO.md`).
+
+## Humanish and translation
+
+- `gitrecon.humanish`: controlled sentences by grammar (`resources/grammars/humanish/`,
+  meanings in `resources/humanish.yml`) - commit messages (`commits`), requirement keywords
+  (`requirements`). Levels 2-3 (normative text, free text) are other projects' ground.
+- With Lark's Earley parser a terminal matches one way only: alternatives that share a prefix
+  (`BREAKING CHANGE` vs a word) need separate terminals.
+- `gitrecon.translate.argos`: Argos Translate behind `_argos()` (lazy import; tests fake it).
 
 ## Dependencies
 
 - Core stays light; heavy libraries live in extras: `hub`, `llm` (chromadb, langchain, litellm,
-  nanobot, ollama, openai), `net` (paramiko, scapy), `all`. Import them lazily inside the
+  nanobot, ollama, openai), `net` (paramiko, scapy), `code` (tree-sitter), `translate` (argostranslate; brings torch),
+  `all`. Import them lazily inside the
   function that needs them. Coming groups (social media, translation, media generation) get
   their own extras the same way.
 

@@ -69,7 +69,9 @@ task docker:run -- menu                  # the interactive menu (commands and st
 | `hub` | huggingface-hub | `gitrecon atlas pull` / `push` |
 | `llm` | chromadb, langchain, litellm, nanobot, ollama, openai | language models: digests, later CaptorLex |
 | `net` | paramiko, scapy | network reconnaissance |
-| `all` | the three above | |
+| `code` | tree-sitter, tree-sitter-language-pack | `gitrecon analyze --deep` (CaptorLex) |
+| `translate` | argostranslate (brings torch, about 5 GB with its CUDA libraries) | `gitrecon translate` |
+| `all` | every extra above | |
 
 `task install` runs `uv sync --all-extras`; a lighter install is `uv sync --extra hub`.
 - `./data` and `./datasets` are mounted, so the [[raw-buffer]] and the [[atlas]] stay on the host,

@@ -139,7 +139,8 @@ def cmd_org_repos(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
-def _analyse_clones(results: list[dict], repos: list[dict], config: Config, out: Output) -> None:
+def _analyse_clones(results: list[dict], repos: list[dict], config: Config, out: Output,
+                    map_private: bool = False) -> None:
     """Analyse what was cloned and keep it (raw buffer + map); a short ``analysis`` lands on each result."""
     from gitrecon.code import analyze_repo
     from gitrecon.code.store import save_analysis
@@ -158,7 +159,7 @@ def _analyse_clones(results: list[dict], repos: list[dict], config: Config, out:
         result["analysis"] = {"files": analysis["files"], "main_language": analysis["main_language"],
                               "frameworks": analysis["frameworks"]}
     if analyses:
-        private = {r["full_name"].lower() for r in repos if r.get("private")}
+        private = set() if map_private else {r["full_name"].lower() for r in repos if r.get("private")}
         saved = save_analysis(analyses, config.raw_dir, default_local_dir(config), private=private)
         out.note(f"analysed {saved['buffered']} (raw buffer: {config.raw_dir / 'analysis'}; "
                  f"{len(saved['mapped'])} new or changed in the map) - skip with --no-analysis")
@@ -192,7 +193,7 @@ def _clone_listed(repos: list[dict], args: argparse.Namespace, config: Config, o
                           progress=out.note if not out.machine else None)
     failed = [r for r in results if r["status"] == "failed"]
     if not args.no_analysis:
-        _analyse_clones(results, chosen, config, out)
+        _analyse_clones(results, chosen, config, out, map_private=args.map_priv_repos)
     out.listing(results, text=_clone_text,
                 data=lambda r: r, url=lambda r: f"https://github.com/{r['full_name']}",
                 summary=f"-- {len(results) - len(failed)} ok, {len(failed)} failed")
@@ -404,6 +405,9 @@ def register(sub: argparse._SubParsersAction) -> None:
         p.add_argument("--no-analysis", action="store_true",
                        help="only clone: by default every clone is analysed (languages, frameworks) and the "
                             "result kept in the raw buffer and the map dataset")
+
+        p.add_argument("--map-priv-repos", action="store_true",
+                       help="write the analysis of private repositories to the map dataset too")
 
     p = sub.add_parser("repos", help="repositories a user owns")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")

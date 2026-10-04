@@ -17,6 +17,7 @@ class Language:
     kind: str = "code"  # code | markup | data | prose | config
     family: str | None = None  # lexical grammar: resources/grammars/lexical/<family>.lark
     keywords: frozenset[str] = field(default_factory=frozenset)
+    structure: str | None = None  # tree-sitter grammar name, for CaptorLex (gitrecon.code.structure)
 
 
 def _keywords(values: list) -> frozenset[str]:
@@ -41,7 +42,8 @@ def _table() -> tuple[dict[str, Language], dict[str, Language]]:
     for name, spec in data["languages"].items():
         family = spec.get("family")
         language = Language(name, spec.get("kind", "code"), family,
-                            _keywords((families.get(family) or {}).get("keywords", [])) if family else frozenset())
+                            _keywords((families.get(family) or {}).get("keywords", [])) if family else frozenset(),
+                            spec.get("structure"))
         for extension in spec.get("extensions", []):
             by_extension[extension.lower()] = language
         for filename in spec.get("filenames", []):

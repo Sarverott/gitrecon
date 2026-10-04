@@ -91,6 +91,11 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
 def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.code import analyze_repo, find_repos
 
+    if args.deep:
+        from gitrecon.code import structure
+
+        if not structure.available():
+            out.note("--deep needs the code extra (uv sync --extra code); continuing with the quick reading only")
     repos = [repo for path in args.path for repo in find_repos(path)]
     if not repos:
         out.note(f"no repository in {', '.join(args.path)} (a folder with .git, or a folder of such folders)")
@@ -99,7 +104,7 @@ def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
     for repo in repos:
         if len(repos) > 1:
             out.note(f"analysing {repo.name}")
-        results.append(analyze_repo(repo))
+        results.append(analyze_repo(repo, deep=args.deep))
 
     def text(r: dict) -> str:
         lines = [f"{r['name']}  ({r['files']} files, main language: {r['main_language'] or '-'})"]
@@ -111,6 +116,10 @@ def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
         if py := r.get("python"):
             lines.append(f"  python: {py['functions']} functions, {py['classes']} classes, docstrings "
                          f"{py['docstring_ratio']:.0%}; imports: {', '.join(list(py['imports'])[:10])}")
+        for name, s in (r.get("structure") or {}).items():
+            counts = ", ".join(f"{v} {k}" for k, v in s["defined_kinds"].items())
+            lines.append(f"  structure {name}: {counts or 'nothing defined'}"
+                         + (f" ({s['unread']} of {s['files']} files unread)" if s["unread"] else ""))
         if r["names"]:
             lines.append("  names: " + ", ".join(list(r["names"])[:15]))
         if r["url_count"]:
@@ -126,13 +135,56 @@ def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
     if not args.no_save:
         from gitrecon.hub.huggingface import default_local_dir
 
-        saved = save_analysis(results, config.raw_dir, default_local_dir(config))
+        private: set[str] = set()
+        if not args.map_priv_repos:
+            from gitrecon.code.store import not_public
+            from gitrecon.sources.github_api import GitHubClient
+
+            private = not_public(results, GitHubClient(config))
+        saved = save_analysis(results, config.raw_dir, default_local_dir(config), private=private)
         out.note(f"saved: {saved['buffered']} to the raw buffer ({config.raw_dir / 'analysis'}), "
                  f"{len(saved['mapped'])} new or changed in the map"
-                 + (f"; not in the map (no origin): {', '.join(saved['unmapped'])}" if saved["unmapped"] else ""))
+                 + (f"; kept out of the map (no origin, private or not shown public - --map-priv-repos "
+                    f"writes them too): {', '.join(saved['unmapped'])}" if saved["unmapped"] else ""))
     if out.urls:
         for url in dict.fromkeys(u for r in results for u in r["urls"]):
             print(url)
+    return 0
+
+
+def cmd_commits(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.code.store import origin
+    from gitrecon.humanish import commit_labels, read_commits, summarize_commits
+
+    path = Path(args.path).expanduser().resolve()
+    commits = read_commits(path, args.max_commits or None)
+    source = origin(path)
+    target = f"repo:{source['owner']}/{source['name']}".lower() if source else f"repo:{path.name}"
+    summary = summarize_commits(commits)
+    labels = commit_labels(target, commits)
+
+    def text() -> str:
+        counts = lambda d: ", ".join(f"{k} {v}" for k, v in d.items()) or "-"  # noqa: E731
+        lines = [f"{path.name}: {summary['commits']} commits ({counts(summary['forms'])})",
+                 f"  conventional form: {summary['conventional_share']:.0%} of {summary['own']} own commits",
+                 f"  types:  {counts(summary['types'])}",
+                 f"  work:   {counts(summary['work'])}",
+                 f"  scopes: {counts(dict(list(summary['scopes'].items())[:8]))}",
+                 f"  breaking: {summary['breaking']}"]
+        if summary["unknown_types"]:
+            lines.append(f"  types without a meaning in resources/humanish.yml: {', '.join(summary['unknown_types'])}")
+        lines += [f"  {label}" for label in labels] or ["  no labels"]
+        return "\n".join(lines)
+
+    out.result({"repository": path.name, "target": target, "summary": summary,
+                "labels": [label.to_json() for label in labels],
+                "commits": [c.to_json() for c in commits] if args.list else None}, text=text)
+    if args.list and not out.machine:
+        for c in commits:
+            mark = "!" if c.breaking else " "
+            print(f"  {(c.sha or '')[:7]} {c.form:<12} {(c.type or '-'):<9}{mark} {c.subject[:70]}")
     return 0
 
 
@@ -236,10 +288,22 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("path", nargs="*", default=["."],
                    help="repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default: .)")
     p.add_argument("--limit", type=int, default=8, help="languages listed per repository")
+    p.add_argument("--deep", action="store_true",
+                   help="CaptorLex step 1: also functions, methods, classes per language (tree-sitter; code extra)")
+    p.add_argument("--map-priv-repos", action="store_true",
+                   help="write private repositories to the map dataset too (by default only public ones; "
+                        "the map gets published)")
     p.add_argument("--no-save", action="store_true",
                    help="only print: by default results go to the raw buffer and the map dataset")
     add_output_flags(p)  # --json: the full analysis; --urls: links found in code and comments
     p.set_defaults(func=cmd_analyze)
+
+    p = sub.add_parser("commits", help="a cloned repository's commit messages read as records: types, scopes, labels")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--max-commits", type=int, default=0, help="only the newest N (default: all)")
+    p.add_argument("--list", action="store_true", help="also every commit with its form and type")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_commits)
 
     p = sub.add_parser("gitgraph", help="a cloned repository's history across all branches, as a Mermaid gitGraph")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")

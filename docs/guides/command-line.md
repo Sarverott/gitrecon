@@ -52,7 +52,10 @@ A folder already there under the same name in another letter case is reused.
 | `gitrecon status` | what is in the raw buffer |
 | `gitrecon map [--node KEY] [--full]` | the [[activity-graph]] |
 | `gitrecon label [--name NAME] [--json\|--urls]` | [[label]]s with confidence and evidence |
-| `gitrecon analyze [PATH...] [--no-save] [--json\|--urls]` | languages, lines, names, frameworks of cloned repositories ([[code-analysis]]) |
+| `gitrecon commits [PATH] [--list] [--max-commits N]` | commit messages as records: forms, types, kinds of work, labels ([[humanish]]) |
+| `gitrecon text requirements URL\|FILE [--raw]` | sentences with MUST / SHOULD / MAY and their level |
+| `gitrecon translate text\|languages\|install` | offline [[translation]] (Argos) |
+| `gitrecon analyze [PATH...] [--deep] [--no-save] [--map-priv-repos] [--json\|--urls]` | languages, lines, names, frameworks of cloned repositories ([[code-analysis]]) |
 | `gitrecon gitgraph [PATH] [--format mermaid] [--max-commits N] [--labels] [--save]` | history across all branches as a Mermaid gitGraph ([[git-graph]]) |
 | `gitrecon network USER [--format mermaid\|dot] [--level owners\|repos] [--save]` | relations around a user: repositories, organizations, where forks come from ([[network]]) |
 

@@ -9,6 +9,7 @@ constructor calls, step by step, with the matching CLI commands.
 | [activity-labels](activity-labels/) | `notebook.ipynb` | events feed, GH Archive hour, `ActivityGraph`, `Labeler` + `Thresholds` |
 | [data-sources](data-sources/) | `01-gist-links` … `06-repos-and-orgs` | gist link harvest, RSS/Atom feeds, RFC index, blog articles, a user's gists, repositories and organizations (list, clone) |
 | [code-analysis](code-analysis/) | `notebook.ipynb` | `analyze_repo`, the Lark lexer, `git_graph` (Mermaid gitGraph) |
+| [reading-text](reading-text/) | `notebook.ipynb` | `parse_commit`, `commit_labels`, `find_requirements`, `translate` |
 | [map-dataset](map-dataset/) | `01-dataset` … `03-push` | the Hugging Face map: pull, write findings, user-namespace, push |
 | [text-experiments](text-experiments/) | `notebook.ipynb` | markdown, word-chains, a12y numeronyms, RAT scripts, Lark JSON tree |
 

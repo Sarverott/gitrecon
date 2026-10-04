@@ -14,7 +14,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from gitrecon.code import frameworks, lexical, pyast
+from gitrecon.code import frameworks, lexical, pyast, structure
 from gitrecon.code.languages import detect
 
 SKIPPED_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", "vendor", "target",
@@ -44,8 +44,12 @@ def _read(path: Path) -> str | None:
     return data.decode("utf-8", errors="replace")
 
 
-def analyze_repo(path: str | Path) -> dict[str, Any]:
-    """Languages (files, bytes, lines, code, comments), Python structure, frameworks, names, URLs."""
+def analyze_repo(path: str | Path, deep: bool = False) -> dict[str, Any]:
+    """Languages (files, bytes, lines, code, comments), Python structure, frameworks, names, URLs.
+
+    ``deep=True`` adds CaptorLex's first step: ``structure`` - functions, methods, classes per
+    language, through tree-sitter (needs the ``code`` extra; slower).
+    """
     root = Path(path).expanduser().resolve()
     files = repo_files(root)
     languages: dict[str, dict[str, Any]] = {}
@@ -55,6 +59,8 @@ def analyze_repo(path: str | Path) -> dict[str, Any]:
     urls: Counter[str] = Counter()
     unknown: Counter[str] = Counter()
     lexed = skipped_large = 0
+    deep = deep and structure.available()
+    structures: dict[str, structure.Structure] = {}
 
     for file in files:
         language = detect(file)
@@ -88,6 +94,8 @@ def analyze_repo(path: str | Path) -> dict[str, Any]:
             entry["lines"] += text.count("\n") + (1 if text and not text.endswith("\n") else 0)
         if language.name == "Python":
             pyast.add_file(python, text)
+        if deep and language.structure:
+            structure.add_file(structures.setdefault(language.name, structure.Structure()), text, language.structure)
 
     for name, stats in per_language.items():
         languages[name].update(lines=languages[name]["lines"] + stats.lines, code=stats.code,
@@ -108,6 +116,8 @@ def analyze_repo(path: str | Path) -> dict[str, Any]:
         "unknown_extensions": dict(unknown.most_common(10)),
         "skipped_large_files": skipped_large,
     }
+    if deep:
+        result["structure"] = {name: stats.to_json() for name, stats in sorted(structures.items())}
     if python.files:
         result["python"] = {
             "files": python.files, "unparsed": python.unparsed, "functions": python.functions,
