@@ -140,8 +140,13 @@ class GitHubClient:
                 links=dict(r.links),
             )
 
-    def graphql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Run a GraphQL query (needs a token); returns ``data``, raises on errors."""
+    def graphql(self, query: str, variables: dict[str, Any] | None = None, partial: bool = False) -> dict[str, Any]:
+        """Run a GraphQL query (needs a token); returns ``data``, raises on errors.
+
+        GraphQL can answer partly: some nodes refused (``null``) with ``errors`` beside the
+        rest of the data. ``partial=True`` keeps that data and only logs the errors; it still
+        raises when nothing came back at all.
+        """
         if not self.config.github_token:
             raise RuntimeError("GitHub GraphQL needs a token (GITHUB_TOKEN, GH_TOKEN or `gh auth login`)")
         r = self.session.post(f"{self.config.api_url}/graphql", json={"query": query, "variables": variables or {}},
@@ -150,7 +155,10 @@ class GitHubClient:
         r.raise_for_status()
         body = r.json()
         if body.get("errors"):
-            raise RuntimeError("; ".join(e.get("message", str(e)) for e in body["errors"]))
+            messages = sorted({e.get("message", str(e)) for e in body["errors"]})
+            if not partial or not body.get("data"):
+                raise RuntimeError("; ".join(messages))
+            log.warning("GraphQL answered partly (%d refused): %s", len(body["errors"]), "; ".join(messages))
         return body["data"]
 
     def count(self, path: str) -> int:

@@ -37,6 +37,7 @@ A folder already there under the same name in another letter case is reused.
 | `gitrecon status` | what is in the raw buffer |
 | `gitrecon map [--node KEY] [--full]` | the [[activity-graph]] |
 | `gitrecon label [--name NAME] [--json\|--urls]` | [[label]]s with confidence and evidence |
+| `gitrecon network USER [--format mermaid\|dot] [--level owners\|repos] [--save]` | relations around a user: repositories, organizations, where forks come from ([[network]]) |
 
 ## The map dataset
 

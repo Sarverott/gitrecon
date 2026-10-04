@@ -23,7 +23,8 @@ src/gitrecon/
 │                   events (feed poller), gists, stars, gharchive, links (gist link harvest),
 │                   feeds (RSS/Atom/RDF), rfc_index (RFC Editor index), blog (articles + feed discovery)
 ├── storage/        rawbuffer — append-only gzip JSONL, data/raw/<source>/<day>/<HH>.json.gz
-├── mapping/        graph — ActivityGraph: entity nodes + evidenced edges
+├── mapping/        graph — ActivityGraph: entity nodes + evidenced edges; network — relations around a
+│                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
 │                   user-namespace identities (namespace)
