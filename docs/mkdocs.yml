@@ -77,6 +77,7 @@ nav:
       - devlog/scrapnote-1791014945204.md
       - devlog/scrapnote-1791134376269.md
       - devlog/scrapnote-1791136416826.md
+      - devlog/scrapnote-1791151005845.md
       - devlog/scrapnote-1791145526438.md
   - Glossary:
       - glossary/README.md
@@ -98,6 +99,8 @@ nav:
           - glossary/network.md
           - glossary/git-graph.md
           - glossary/code-analysis.md
+          - glossary/peekerlex.md
+          - glossary/captorlex.md
           - glossary/label.md
           - glossary/labeler.md
           - glossary/rule.md

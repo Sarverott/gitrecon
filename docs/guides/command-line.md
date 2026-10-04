@@ -13,6 +13,7 @@ addresses, one per line) - see [[integration]] for the shapes. Example:
 > | Saved by | Lands in |
 > | --- | --- |
 > | `network USER --save` | `data/networks/<user>-<level>.md` (a Mermaid diagram in markdown) |
+> | `analyze PATH` (unless `--no-save`), `repo-clone` / `org-clone` (unless `--no-analysis`) | `data/raw/analysis/` and the map: `datasets/imperialmap/data-heuristicality/code-analysis/` |
 > | `gitgraph PATH --save` | `data/gitgraphs/<repository>.md` (a Mermaid gitGraph in markdown) |
 > | `events`, `gists`, `archive`, `stars --save`, `feeds --save`, `blog --save` | `data/raw/<source>/<day>/` |
 > | `links --save`, `rfc --save` | `data/catalog/` |
@@ -51,7 +52,7 @@ A folder already there under the same name in another letter case is reused.
 | `gitrecon status` | what is in the raw buffer |
 | `gitrecon map [--node KEY] [--full]` | the [[activity-graph]] |
 | `gitrecon label [--name NAME] [--json\|--urls]` | [[label]]s with confidence and evidence |
-| `gitrecon analyze [PATH...] [--json\|--urls]` | languages, lines, names, frameworks of cloned repositories ([[code-analysis]]) |
+| `gitrecon analyze [PATH...] [--no-save] [--json\|--urls]` | languages, lines, names, frameworks of cloned repositories ([[code-analysis]]) |
 | `gitrecon gitgraph [PATH] [--format mermaid] [--max-commits N] [--labels] [--save]` | history across all branches as a Mermaid gitGraph ([[git-graph]]) |
 | `gitrecon network USER [--format mermaid\|dot] [--level owners\|repos] [--save]` | relations around a user: repositories, organizations, where forks come from ([[network]]) |
 

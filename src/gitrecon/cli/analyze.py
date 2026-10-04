@@ -117,8 +117,19 @@ def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
             lines.append(f"  links in code: {r['url_count']}")
         return "\n".join(lines)
 
+    from gitrecon.code.store import describe, save_analysis
+
+    for result in results:
+        describe(result)
     out.listing(results, text=text, data=lambda r: r, url=lambda r: None,
                 summary=f"-- {len(results)} repositories analysed" if len(results) > 1 else None)
+    if not args.no_save:
+        from gitrecon.hub.huggingface import default_local_dir
+
+        saved = save_analysis(results, config.raw_dir, default_local_dir(config))
+        out.note(f"saved: {saved['buffered']} to the raw buffer ({config.raw_dir / 'analysis'}), "
+                 f"{len(saved['mapped'])} new or changed in the map"
+                 + (f"; not in the map (no origin): {', '.join(saved['unmapped'])}" if saved["unmapped"] else ""))
     if out.urls:
         for url in dict.fromkeys(u for r in results for u in r["urls"]):
             print(url)
@@ -225,6 +236,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("path", nargs="*", default=["."],
                    help="repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default: .)")
     p.add_argument("--limit", type=int, default=8, help="languages listed per repository")
+    p.add_argument("--no-save", action="store_true",
+                   help="only print: by default results go to the raw buffer and the map dataset")
     add_output_flags(p)  # --json: the full analysis; --urls: links found in code and comments
     p.set_defaults(func=cmd_analyze)
 

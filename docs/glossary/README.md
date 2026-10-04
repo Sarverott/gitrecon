@@ -39,6 +39,8 @@ collect ──► raw buffer ──► activity graph ──► labels
 | --- | --- |
 | [Entity](entity.md) | Anything gitrecon can map, with a kind and a stable key. |
 | [Code analysis](code-analysis.md) | What a cloned repository is made of: languages, code and comment lines, names, links, Python structure, frameworks. |
+| [PeekerLex](peekerlex.md) | The quick, light reading of code: enough to know what a repository is made of. |
+| [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Planned.* |
 | [Git graph](git-graph.md) | A repository's history across all branches, drawn as a Mermaid `gitGraph`. |
 | [Network](network.md) | Repositories, users and organizations around one user, as a graph of relations. |
 | [Activity graph](activity-graph.md) | Who touches what: entities as nodes, observed relations as edges with evidence. |

@@ -57,10 +57,21 @@ task docker:stop
 task docker:run -- menu                  # the interactive menu (commands and status)
 ```
 
-- The image is Python on Debian slim with git, `resources/` and the locked runtime dependencies
-  plus the `hub` extra. Its size follows the dependency list in `pyproject.toml` (about 950 MB
-  with chromadb, langchain and the other libraries currently in it; chromadb is also why the
-  base is not Alpine).
+- The image is Python on Debian slim with git, `resources/` and the locked core dependencies
+  plus the `hub` extra (about 380 MB). Other extras: `docker build --build-arg EXTRAS="--all-extras" .`
+  (Debian rather than Alpine because the `llm` extra's chromadb has no Alpine build.)
+
+## Extras
+
+| Extra | Brings | For |
+| --- | --- | --- |
+| (core) | requests, rich, lark, pyyaml, bs4, markdownify, marko, defusedxml, networkx, docker, podman | everything gitrecon does today except the two below |
+| `hub` | huggingface-hub | `gitrecon atlas pull` / `push` |
+| `llm` | chromadb, langchain, litellm, nanobot, ollama, openai | language models: digests, later CaptorLex |
+| `net` | paramiko, scapy | network reconnaissance |
+| `all` | the three above | |
+
+`task install` runs `uv sync --all-extras`; a lighter install is `uv sync --extra hub`.
 - `./data` and `./datasets` are mounted, so the [[raw-buffer]] and the [[atlas]] stay on the host,
   written as your user.
 - Tokens (`GITHUB_TOKEN`/`GH_TOKEN`, `HF_TOKEN`) come from the environment; the `docker:*` tasks

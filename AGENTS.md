@@ -71,10 +71,27 @@ src/gitrecon/
 
 ## Container
 
-`Dockerfile` (python:3.12-slim - chromadb's onnxruntime has no Alpine build; two stages, the
+`Dockerfile` (python:3.12-slim - the `llm` extra's onnxruntime has no Alpine build; two stages, the
 venv and `resources/` are copied, git installed; `EXTRAS` build arg, hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
 under the `listen` profile). `.dockerignore` is an allow-list: pyproject, lock, README, src.
 Runtime-only dependencies stay minimal - anything not imported by `src/` belongs in a group.
+
+## Reading code: PeekerLex and CaptorLex
+
+- **PeekerLex** = the quick reading that exists (`gitrecon.code`: lexers, tables, manifests).
+  **CaptorLex** = the deep reading (structure -> relations -> meaning), planned; only Python
+  `ast` exists. The user's names: use them.
+- Results are kept by default in both the raw buffer (`data/raw/analysis/`) and the map
+  (`data-heuristicality/code-analysis/<platform>/<owner>/<repo>.json`, `gitrecon.code.store`);
+  `analyze --no-save`, clone commands `--no-analysis`. Private repositories never go to the map.
+- No Rattish grammar here: it belongs to the rattish project (`forge/rattish/rattish/TODO.md`).
+
+## Dependencies
+
+- Core stays light; heavy libraries live in extras: `hub`, `llm` (chromadb, langchain, litellm,
+  nanobot, ollama, openai), `net` (paramiko, scapy), `all`. Import them lazily inside the
+  function that needs them. Coming groups (social media, translation, media generation) get
+  their own extras the same way.
 
 ## Resources (resources/)
 

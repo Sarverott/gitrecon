@@ -4,7 +4,9 @@
 
 ## What it is
 
-Three layers, all driven by tables and grammars in `resources/` rather than by code:
+Two depths of reading: [[peekerlex]] (quick and light - everything below except the Python
+structure) and [[captorlex]] (deep - planned; Python's `ast` is its first piece). The layers,
+all driven by tables and grammars in `resources/` rather than by code:
 
 - **languages** - a file's language by extension or name (`resources/languages.yml`);
 - **lexical patterns** - one Lark grammar per language *family* (`resources/grammars/lexical/`:
@@ -23,6 +25,13 @@ Three layers, all driven by tables and grammars in `resources/` rather than by c
 `gitrecon.code` (`languages`, `lexical`, `pyast`, `frameworks`, `analyze`). CLI:
 `gitrecon analyze [PATH...]` - a repository, or a folder of repositories such as
 `~/__WORKSHOP/forge/rattish`. Guide: [[analysing-code]].
+
+## Where results go
+
+By default both: the raw buffer (`data/raw/analysis/`, every run appended) and the map dataset
+(`datasets/imperialmap/data-heuristicality/code-analysis/<platform>/<owner>/<repository>.json`,
+rewritten only when the repository changed). `gitrecon analyze --no-save` only prints;
+`repo-clone` / `org-clone` analyse what they clone unless `--no-analysis`.
 
 ## Relations
 

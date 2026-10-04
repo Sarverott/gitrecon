@@ -168,3 +168,66 @@ def test_analyze_command(repo, capsys):
     assert main(["analyze", str(repo)]) == 0
     text = capsys.readouterr().out
     assert "shop  (" in text and "frameworks & tools:" in text and "python: 1 functions" in text
+
+
+# --- keeping results: raw buffer and map ----------------------------------------------------
+
+
+def git_repo(path, remote=None):
+    import subprocess
+
+    run = lambda *a: subprocess.run(["git", "-C", str(path), *a], check=True, capture_output=True)  # noqa: E731
+    run("init", "--quiet")
+    run("add", ".")
+    run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "--quiet", "-m", "c0")
+    if remote:
+        run("remote", "add", "origin", remote)
+
+
+@pytest.mark.parametrize("remote", ["https://github.com/Rattish/Shop.git", "git@github.com:Rattish/Shop.git",
+                                    "ssh://git@github.com/Rattish/Shop"])
+def test_origin_of_a_clone(tmp_path, repo, remote):
+    from gitrecon.code.store import origin
+
+    git_repo(repo, remote)
+    assert origin(repo) == {"platform": "github.com", "owner": "Rattish", "name": "Shop"}
+    assert origin(tmp_path) is None
+
+
+def test_save_analysis_buffer_and_map(tmp_path, repo):
+    from gitrecon.code.store import save_analysis
+    from gitrecon.storage.rawbuffer import RawBuffer
+
+    git_repo(repo, "https://github.com/Rattish/Shop.git")
+    map_root = tmp_path / "map"
+    map_root.mkdir()
+    saved = save_analysis([analyze_repo(repo)], tmp_path / "raw", map_root)
+    target = map_root / "data-heuristicality" / "code-analysis" / "github.com" / "rattish" / "shop.json"
+    assert saved == {"buffered": 1, "mapped": [str(target)], "unmapped": []}
+    (record,) = RawBuffer(tmp_path / "raw").read("analysis")
+    assert record["path"] == str(repo) and record["analysed_at"] and len(record["commit"]) == 40
+    in_map = json.loads(target.read_text())
+    assert "path" not in in_map and "analysed_at" not in in_map       # nothing local, nothing that churns
+    assert in_map["origin"]["owner"] == "Rattish" and in_map["commit"] == record["commit"]
+    # unchanged repository: buffered again (append-only), the map file untouched
+    assert save_analysis([analyze_repo(repo)], tmp_path / "raw", map_root)["mapped"] == []
+    # private repositories and repositories without an origin stay out of the (published) map
+    target.unlink()
+    again = save_analysis([analyze_repo(repo)], tmp_path / "raw", map_root, private={"rattish/shop"})
+    assert again["unmapped"] == ["shop"] and not target.exists()
+
+
+def test_analyze_command_saves_unless_told_not_to(repo, capsys, monkeypatch, tmp_path):
+    git_repo(repo, "https://github.com/Rattish/Shop.git")
+    monkeypatch.setenv("GITRECON_DATA", str(tmp_path / "d"))
+    monkeypatch.setenv("GITRECON_DATASETS", str(tmp_path / "ds"))
+    (tmp_path / "ds" / "imperialmap").mkdir(parents=True)
+    assert main(["analyze", str(repo), "--no-save"]) == 0
+    assert not (tmp_path / "d").exists() and "saved:" not in capsys.readouterr().out
+    assert main(["analyze", str(repo), "--json"]) == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)[0]["origin"]["name"] == "Shop"
+    assert "saved: 1 to the raw buffer" in captured.err                 # notes leave stdout to the data
+    assert list((tmp_path / "d" / "raw" / "analysis").rglob("*.json.gz"))
+    assert (tmp_path / "ds" / "imperialmap" / "data-heuristicality" / "code-analysis" / "github.com" / "rattish"
+            / "shop.json").exists()
