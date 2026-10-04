@@ -72,6 +72,13 @@ hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands,
 under the `listen` profile). `.dockerignore` is an allow-list: pyproject, lock, README, src.
 Runtime-only dependencies stay minimal - anything not imported by `src/` belongs in a group.
 
+## Cloning defaults
+
+Clone commands take an optional path; without one, clones go to the active workshop's forge
+(`gitrecon.config.forge_dir()`, `GITRECON_FORGE` overrides): `<forge>/<user>/` for
+`repo-clone`, `<forge>/<org>/` for `org-clone`, `<forge>/<user>/my-gists` for `gist-clone`
+(`sources.cloning.default_clone_path`, which reuses an existing folder of another letter case).
+
 ## Output contract (CLI)
 
 - Every listing command takes `--json` and, when items have web pages, `--urls`

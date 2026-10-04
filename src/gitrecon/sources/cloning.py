@@ -15,12 +15,31 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
+from gitrecon.config import forge_dir
+
 
 def git(*args: str) -> subprocess.CompletedProcess:
     # GIT_TERMINAL_PROMPT=0: a missing or private-without-access repository fails instead of
     # waiting for a password nobody types
     env = os.environ | {"GIT_TERMINAL_PROMPT": "0"}
     return subprocess.run(["git", *args], capture_output=True, text=True, check=False, env=env)
+
+
+def default_clone_path(owner: str, *subdirs: str) -> Path:
+    """Where an owner's clones go when no path is given: ``<forge>/<owner>[/<subdirs>]``.
+
+    ``<forge>`` is the active BOS workshop's forge (``~/__WORKSHOP/forge`` by default), so a
+    user's repositories land in ``forge/<user>/`` and an organization's in ``forge/<org>/`` -
+    the BOS layout ``forge/<scope>/<repository>``. A folder already there under the same name
+    in another letter case (``silesiamakerspace`` for ``SilesiaMakerSpace``) is reused rather
+    than doubled.
+    """
+    forge = forge_dir()
+    if forge.is_dir() and not (forge / owner).exists():
+        same = [d.name for d in forge.iterdir() if d.is_dir() and d.name.lower() == owner.lower()]
+        if len(same) == 1:
+            owner = same[0]
+    return forge.joinpath(owner, *subdirs)
 
 
 def clone_many(
