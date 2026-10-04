@@ -43,6 +43,7 @@ gitrecon events org:github --watch --json | my-consumer   # JSON Lines, one even
 | `rfc` | `[rfc]` with relations and `url` | rfc-editor.org pages |
 | `blog` | `[article]` with `markdown` | articles |
 | `map` | summary `{nodes, edges, relations, hubs: [{key, degree, url}]}`; `--node`: `[{relation, key, url}]`; `--full`: `{nodes, edges}` | hubs / neighbours / every node |
+| `network USER` | `{nodes: [{key, kind, name, url, fork, stars, language}], edges: [{source, relation, target}], owners, owner_forks: [{source, target, count}]}` | every node |
 | `label` | `[{name, target, confidence, evidence, details, url}]` | labeled entities |
 | `status` | `{data_dir, datasets_dir, token, sources}` | - |
 | `atlas ACTION` | `{repo, url, path, areas}` / `{root, changed}` / `{commit}` | dataset page / commit |
