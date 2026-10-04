@@ -18,6 +18,20 @@ def _project_root() -> Path:
 PROJECT_ROOT = _project_root()
 
 
+def forge_dir() -> Path:
+    """The forge of the active BOS workshop: where cloned work goes by default.
+
+    ``GITRECON_FORGE`` if set; else ``forge/`` of the nearest ``__WORKSHOP`` above the
+    project (the active workshop); else ``~/__WORKSHOP/forge``.
+    """
+    if os.environ.get("GITRECON_FORGE"):
+        return Path(os.environ["GITRECON_FORGE"]).expanduser()
+    for parent in PROJECT_ROOT.parents:
+        if parent.name == "__WORKSHOP":
+            return parent / "forge"
+    return Path.home() / "__WORKSHOP" / "forge"
+
+
 def env_files() -> list[Path]:
     """Dotenv files to read, most specific first.
 

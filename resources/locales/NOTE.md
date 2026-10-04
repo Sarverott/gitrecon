@@ -1,0 +1,1 @@
+for sure libretranslate will be used here but not yet is known how to implement translations on readthedocs - throwed into later TODO

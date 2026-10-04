@@ -1,3 +1,25 @@
+## v0.4.0 (2026-10-03)
+
+### BREAKING CHANGE
+
+- most of github basic mass management is ready
+
+### Feat
+
+- **adding-repo,-cloning,-user-and-orgs-methods-for-github-resources**: massive cloning is on the board
+
+## v0.3.4 (2026-10-03)
+
+### Feat
+
+- **adding-gist-recollecting,-making-it-core-methods,-examples-and-tests-included**: gists was pushed to wan and forgotted, now will be bringed back to local zone
+
+## v0.3.3 (2026-10-03)
+
+### Fix
+
+- **rafining-services-enclousure,-combining-net-stack,-delegating-gateway-access**: we need more solid work on managing core
+
 ## v0.3.2 (2026-10-03)
 
 ### Feat
