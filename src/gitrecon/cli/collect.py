@@ -76,8 +76,10 @@ def cmd_gist_catalog(args: argparse.Namespace, config: Config, out: Output) -> i
 
 
 def cmd_gist_clone(args: argparse.Namespace, config: Config, out: Output) -> int:
-    from gitrecon.sources.gists import clone_gists, gist_catalog
+    from gitrecon.sources.cloning import default_clone_path
+    from gitrecon.sources.gists import GISTS_DIRNAME, clone_gists, gist_catalog
 
+    path = Path(args.path).expanduser() if args.path else default_clone_path(args.user, GISTS_DIRNAME)
     catalog = gist_catalog(args.user, _client(config), privacy=args.privacy, with_commits=False)
     chosen = catalog[: args.limit] if args.limit else catalog
     size = sum(g["size"] for g in chosen) / 2**20
@@ -86,10 +88,10 @@ def cmd_gist_clone(args: argparse.Namespace, config: Config, out: Output) -> int
                                            f"{', '.join(g['filelist'])[:50]}",
                     data=lambda g: g, url=lambda g: g["url"],
                     summary=f"-- {len(chosen)} of {len(catalog)} gists, {size:.1f} MiB of files (plus history) "
-                            f"-> {Path(args.path).expanduser()}")
+                            f"-> {path}")
         return 0
-    out.note(f"cloning {len(chosen)} of {len(catalog)} gists ({size:.1f} MiB of files) into {args.path}")
-    results = clone_gists(chosen, args.path, update=args.update, progress=out.note if not out.machine else None)
+    out.note(f"cloning {len(chosen)} of {len(catalog)} gists ({size:.1f} MiB of files) into {path}")
+    results = clone_gists(chosen, path, update=args.update, progress=out.note if not out.machine else None)
     failed = [r for r in results if r["status"] == "failed"]
     out.listing(results, text=lambda r: f"{r['status']:<8} {r['gistID']}" + (f"  {r['error']}" if r["error"] else ""),
                 data=lambda r: r, url=lambda r: f"https://gist.github.com/{r['gistID']}",
@@ -138,7 +140,10 @@ def cmd_org_repos(args: argparse.Namespace, config: Config, out: Output) -> int:
 
 
 def _clone_listed(repos: list[dict], args: argparse.Namespace, out: Output, what: str) -> int:
+    from gitrecon.sources.cloning import default_clone_path
     from gitrecon.sources.repos import clone_repos
+
+    path = Path(args.path).expanduser() if args.path else default_clone_path(what)
 
     chosen = repos[: args.limit] if args.limit else repos
     size = sum(r["size_kib"] for r in chosen) / 1024
@@ -146,11 +151,11 @@ def _clone_listed(repos: list[dict], args: argparse.Namespace, out: Output, what
     if args.dry_run:
         out.listing(chosen, text=lambda r: f"would clone {_repo_text(r)}", data=lambda r: r, url=lambda r: r["url"],
                     summary=f"-- {len(chosen)} of {len(repos)} repositories of {what}, about {size:,.1f} MiB on "
-                            f"GitHub{depth} -> {Path(args.path).expanduser()}")
+                            f"GitHub{depth} -> {path}")
         return 0
     out.note(f"cloning {len(chosen)} of {len(repos)} repositories of {what} (about {size:,.1f} MiB{depth}) "
-             f"into {args.path}")
-    results = clone_repos(chosen, args.path, update=args.update, depth=args.depth,
+             f"into {path}")
+    results = clone_repos(chosen, path, update=args.update, depth=args.depth,
                           progress=out.note if not out.machine else None)
     failed = [r for r in results if r["status"] == "failed"]
     out.listing(results, text=lambda r: f"{r['status']:<8} {r['full_name']}" + (f"  {r['error']}" if r["error"] else ""),
@@ -341,7 +346,8 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     p = sub.add_parser("gist-clone", help="clone a user's gists into PATH/<gistID>, as they are")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")
-    p.add_argument("path", help="where the clones go (created when missing), e.g. ~/__WORKSHOP/forge/sarverott/my-gists")
+    p.add_argument("path", nargs="?", help="where the clones go, PATH/<gistID> (created when missing); "
+                                           "default: <forge>/<USER>/my-gists, i.e. ~/__WORKSHOP/forge/<USER>/my-gists")
     p.add_argument("--privacy", choices=["public", "all", "secret"], default="public")
     p.add_argument("--limit", type=int, help="only the first N (oldest first)")
     p.add_argument("--update", action="store_true", help="fast-forward clones that exist already")
@@ -354,7 +360,8 @@ def register(sub: argparse._SubParsersAction) -> None:
         p.add_argument("--no-archived", action="store_true", help="leave archived repositories out")
 
     def clone_options(p: argparse.ArgumentParser) -> None:
-        p.add_argument("path", help="where the clones go, PATH/<name> (created when missing)")
+        p.add_argument("path", nargs="?", help="where the clones go, PATH/<name> (created when missing); "
+                                               "default: <forge>/<USER or ORG>/, i.e. ~/__WORKSHOP/forge/<name>/")
         p.add_argument("--limit", type=int, help="only the first N (oldest first)")
         p.add_argument("--depth", type=int, help="shallow clones, e.g. 1 = newest commit only (much smaller)")
         p.add_argument("--update", action="store_true", help="fast-forward clones that exist already")

@@ -3,8 +3,8 @@
     user_repos("sarverott")                 # repositories the user owns
     user_orgs("sarverott")                  # organizations the user belongs to
     org_repos("The-Apokryf")                # repositories of an organization
-    clone_user_repos("sarverott", "~/__WORKSHOP/forge/sarverott/repos")
-    clone_org_repos("The-Apokryf", "~/__WORKSHOP/forge/The-Apokryf")
+    clone_user_repos("sarverott")           # -> ~/__WORKSHOP/forge/sarverott/<name>
+    clone_org_repos("The-Apokryf")          # -> ~/__WORKSHOP/forge/The-Apokryf/<name>, or give a path
 
 Listings are plain dicts (``repo_entry``); clones go to ``<path>/<name>`` through
 ``cloning.clone_many``. What GitHub shows depends on the token: private repositories and
@@ -17,7 +17,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
-from gitrecon.sources.cloning import clone_many
+from gitrecon.sources.cloning import clone_many, default_clone_path
 from gitrecon.sources.github_api import GitHubClient
 
 PRIVACY = ("public", "all")
@@ -134,17 +134,23 @@ def clone_repos(
             for repo, result in zip(repos, results)]
 
 
-def clone_user_repos(username: str, path: str | Path, client: GitHubClient | None = None,
+def clone_user_repos(username: str, path: str | Path | None = None, client: GitHubClient | None = None,
                      privacy: str = "public", include_forks: bool = True, include_archived: bool = True,
                      **clone_options: Any) -> list[dict[str, Any]]:
-    """Every repository ``username`` owns, cloned into ``<path>/<name>``."""
+    """Every repository ``username`` owns, cloned into ``<path>/<name>``.
+
+    Without ``path``: ``<forge>/<username>/`` (``~/__WORKSHOP/forge/<username>/``).
+    """
     repos = user_repos(username, client, privacy, include_forks, include_archived)
-    return clone_repos(repos, path, **clone_options)
+    return clone_repos(repos, path or default_clone_path(username), **clone_options)
 
 
-def clone_org_repos(org: str, path: str | Path, client: GitHubClient | None = None,
+def clone_org_repos(org: str, path: str | Path | None = None, client: GitHubClient | None = None,
                     include_forks: bool = True, include_archived: bool = True,
                     **clone_options: Any) -> list[dict[str, Any]]:
-    """Every repository of an organization, cloned into ``<path>/<name>``."""
+    """Every repository of an organization, cloned into ``<path>/<name>``.
+
+    Without ``path``: ``<forge>/<org>/`` (``~/__WORKSHOP/forge/<org>/``).
+    """
     repos = org_repos(org, client, include_forks, include_archived)
-    return clone_repos(repos, path, **clone_options)
+    return clone_repos(repos, path or default_clone_path(org), **clone_options)
