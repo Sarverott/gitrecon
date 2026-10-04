@@ -1,3 +1,9 @@
+## v0.4.1 (2026-10-04)
+
+### Fix
+
+- **adding-default-output-paths,-adding-diagram-in-mermaid**: for laziness and visual pleasure
+
 ## v0.4.0 (2026-10-03)
 
 ### BREAKING CHANGE

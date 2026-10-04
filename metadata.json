@@ -1,7 +1,7 @@
 {
     "name": "gitrecon",
     "description": "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "authors":[
         ["Sarverott", "Sett Sarverott A.A.B. <sett@sarverott.com> (https://sett.sarverott.com)", "https://sarverott.com"]
     ],
