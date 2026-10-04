@@ -69,6 +69,8 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
         lines += [f"  {n:>3}  {name(s):<26} -> {name(t)}" for n, s, t in flows[: args.limit]]
         if len(flows) > args.limit:
             lines.append(f"  ... {len(flows) - args.limit} more (--limit)")
+        if graph.notes:
+            lines += ["", "not seen:"] + [f"  {note}" for note in graph.notes]
         return "\n".join(lines)
 
     text = {"summary": summary, "mermaid": diagram, "dot": lambda: render.to_dot(graph)}[args.format]
@@ -78,7 +80,10 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
         path = folder / f"{args.user}-{args.level}.md"
         path.write_text(f"# Network of {args.user} ({args.level})\n\n```mermaid\n{diagram()}\n```\n", encoding="utf-8")
         out.note(f"saved {path}")
-    out.result(render.to_json(graph), text=text,
+    if graph.notes and args.format != "summary":
+        for note in graph.notes:
+            out.note(f"note: {note}")
+    out.result(render.to_json(graph) | {"notes": graph.notes}, text=text,
                urls=(node.html_url for node in graph.nodes.values() if node.html_url))
     return 0
 
