@@ -126,3 +126,47 @@ def test_org_clone_dry_run(tmp_path, monkeypatch, capsys):
     assert main(["org-clone", "rattish", str(target), "--no-forks", "--dry-run", "--urls"]) == 0
     assert capsys.readouterr().out.splitlines() == ["https://github.com/rattish/a"]
     assert not target.exists()
+
+
+# --- default clone path -----------------------------------------------------------------
+
+
+def test_default_clone_path_is_the_forge_scope(tmp_path, monkeypatch):
+    from gitrecon.sources.cloning import default_clone_path
+
+    monkeypatch.setenv("GITRECON_FORGE", str(tmp_path / "forge"))
+    assert default_clone_path("The-Apokryf") == tmp_path / "forge" / "The-Apokryf"
+    assert default_clone_path("sarverott", "my-gists") == tmp_path / "forge" / "sarverott" / "my-gists"
+    (tmp_path / "forge" / "silesiamakerspace").mkdir(parents=True)
+    assert default_clone_path("SilesiaMakerSpace").name == "silesiamakerspace"  # existing folder reused
+
+
+def test_forge_dir_is_the_active_workshop(monkeypatch):
+    from gitrecon.config import PROJECT_ROOT, forge_dir
+
+    monkeypatch.delenv("GITRECON_FORGE", raising=False)
+    forge = forge_dir()
+    assert forge.name == "forge" and forge.parent.name == "__WORKSHOP"
+    if "__WORKSHOP" in PROJECT_ROOT.parts:  # inside a workshop: its own forge, not the home one
+        assert forge in PROJECT_ROOT.parents
+
+
+def test_clone_commands_default_to_the_forge(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("GITRECON_FORGE", str(tmp_path / "forge"))
+    client, _ = client_with({f"{API}/orgs/rattish/repos": [FakeResponse([repo("rattish/a")])],
+                             f"{API}/users/sarverott/repos": [FakeResponse(MINE)]})
+    monkeypatch.setattr("gitrecon.cli.collect._client", lambda config: client)
+    assert main(["org-clone", "rattish", "--dry-run"]) == 0
+    assert f"-> {tmp_path / 'forge' / 'rattish'}" in capsys.readouterr().out
+    assert main(["repo-clone", "sarverott", "--dry-run"]) == 0
+    assert f"-> {tmp_path / 'forge' / 'sarverott'}" in capsys.readouterr().out
+    assert not (tmp_path / "forge").exists()  # a dry run creates nothing
+
+
+def test_clone_org_repos_without_path_uses_the_forge(tmp_path, monkeypatch, origin):
+    monkeypatch.setenv("GITRECON_FORGE", str(tmp_path / "forge"))
+    listed = repo("rattish/tool") | {"clone_url": f"file://{origin}"}
+    client, _ = client_with({f"{API}/orgs/rattish/repos": [FakeResponse([listed])]})
+    results = repos.clone_org_repos("rattish", client=client)
+    assert results[0]["status"] == "cloned"
+    assert results[0]["path"] == str(tmp_path / "forge" / "rattish" / "tool")

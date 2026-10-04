@@ -16,6 +16,7 @@ from gitrecon.sources.cloning import clone_many
 from gitrecon.sources.github_api import GitHubClient
 
 GIST_CLONE_URL = "https://gist.github.com/{gist_id}.git"
+GISTS_DIRNAME = "my-gists"  # default home of a user's gists: <forge>/<user>/my-gists
 PRIVACY = ("public", "all", "secret")
 
 _GIST_FIELDS = """
