@@ -1,3 +1,9 @@
+## v0.8.2 (2026-10-05)
+
+### Fix
+
+- **old-fix**: for cause of melodical repos
+
 ## v0.8.1 (2026-10-05)
 
 ### Fix
