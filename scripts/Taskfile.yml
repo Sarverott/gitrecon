@@ -17,10 +17,10 @@ tasks:
       - uv run --quiet python scripts/sync_metadata.py --check
 
   lint:
-    desc: Check the shell scripts (delegated CI steps, services) with shellcheck
+    desc: Check the shell scripts (delegated CI steps) with shellcheck
     dir: '{{.TASKFILE_DIR}}/..'
     cmds:
-      - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh services/*/*/*.sh
+      - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh
 
   merge:check:
     desc: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)

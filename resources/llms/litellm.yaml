@@ -1,0 +1,42 @@
+# LiteLLM proxy configuration: one OpenAI-compatible address for every model.
+# Clients ask for a model by the name on the left; what answers is decided here.
+# gitrecon only keeps this file - the proxy itself and the models run somewhere else.
+#
+#   run it:   litellm --config resources/llms/litellm.yaml --port 4000
+#   needs:    OLLAMA_API_BASE (e.g. http://localhost:11434), LITELLM_MASTER_KEY,
+#             XAI_API_KEY only for the remote model
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+model_list:
+  # --- roles: names that say what a model is for. Change the model behind a role here,
+  #     and every program using the role follows.
+  - model_name: local-writer            # writes: code, summaries
+    litellm_params:
+      model: ollama_chat/qwen2.5-coder:7b
+      api_base: os.environ/OLLAMA_API_BASE
+  - model_name: local-reader            # small and quick: classifying, short answers
+    litellm_params:
+      model: ollama_chat/deepseek-r1:1.5b
+      api_base: os.environ/OLLAMA_API_BASE
+  - model_name: local-embed             # vectors for a vector database
+    litellm_params:
+      model: ollama/nomic-embed-text-v2-moe
+      api_base: os.environ/OLLAMA_API_BASE
+
+  # --- anything else the ollama server has, by its own name: ollama/<model>
+  - model_name: ollama/*
+    litellm_params:
+      model: ollama_chat/*
+      api_base: os.environ/OLLAMA_API_BASE
+
+  # --- remote models: used only when the key is set
+  - model_name: grok
+    litellm_params:
+      model: xai/grok-4
+      api_key: os.environ/XAI_API_KEY
+
+litellm_settings:
+  drop_params: true        # a parameter one provider does not know is dropped, not an error
+  request_timeout: 600     # local models on a CPU are slow
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

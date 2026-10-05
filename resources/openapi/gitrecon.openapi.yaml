@@ -1,0 +1,2467 @@
+openapi: 3.1.0
+info:
+  title: gitrecon
+  version: 0.8.1
+  description: 'Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects
+
+
+    Generated from the command-line parser and the Taskfile (`task openapi`); do not edit. A contract: no server
+    answers it yet.'
+tags:
+- name: collect
+  description: collect - bring data in
+- name: analyze
+  description: analyze - read and draw what was collected
+- name: atlas
+  description: atlas - the map dataset
+- name: content
+  description: content - text, commits, digests
+- name: 'task: project'
+- name: 'task: docker'
+- name: 'task: docs'
+- name: 'task: examples'
+- name: 'task: gh'
+- name: 'task: hooks'
+- name: 'task: map'
+- name: 'task: merge'
+- name: 'task: scripts'
+paths:
+  /commands/events:
+    post:
+      operationId: command_events
+      tags:
+      - collect
+      summary: poll an Events API feed into the raw buffer
+      x-cli: gitrecon events [feed]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feed:
+                  type: string
+                  description: public | user:X | org:X | repo:owner/name
+                  default: public
+                watch:
+                  type: boolean
+                  description: keep listening
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/gists:
+    post:
+      operationId: command_gists
+      tags:
+      - collect
+      summary: fetch public (or one user's) gists into the raw buffer
+      x-cli: gitrecon gists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                since:
+                  type: string
+                  description: ISO timestamp
+                pages:
+                  type: integer
+                  default: 3
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/gist-catalog:
+    post:
+      operationId: command_gist_catalog
+      tags:
+      - collect
+      summary: 'every gist of a user: files, stars, comments, forks, commits, size'
+      x-cli: gitrecon gist-catalog <user>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                privacy:
+                  type: string
+                  enum:
+                  - public
+                  - all
+                  - secret
+                  description: all/secret need that user's own token
+                  default: public
+                no_commits:
+                  type: boolean
+                  description: skip counting commits (one request per gist)
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/gist-clone:
+    post:
+      operationId: command_gist_clone
+      tags:
+      - collect
+      summary: clone a user's gists into PATH/<gistID>, as they are
+      x-cli: gitrecon gist-clone <user> [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                path:
+                  type: string
+                  description: 'where the clones go, PATH/<gistID> (created when missing); default: <forge>/<USER>/my-gists,
+                    i.e. ~/__WORKSHOP/forge/<USER>/my-gists'
+                privacy:
+                  type: string
+                  enum:
+                  - public
+                  - all
+                  - secret
+                  default: public
+                limit:
+                  type: integer
+                  description: only the first N (oldest first)
+                update:
+                  type: boolean
+                  description: fast-forward clones that exist already
+                dry_run:
+                  type: boolean
+                  description: list what would be cloned and its size, clone nothing
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/repos:
+    post:
+      operationId: command_repos
+      tags:
+      - collect
+      summary: repositories a user owns
+      x-cli: gitrecon repos <user>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                privacy:
+                  type: string
+                  enum:
+                  - public
+                  - all
+                  description: 'all: private too (own token)'
+                  default: public
+                no_forks:
+                  type: boolean
+                  description: leave forks out
+                no_archived:
+                  type: boolean
+                  description: leave archived repositories out
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/orgs:
+    post:
+      operationId: command_orgs
+      tags:
+      - collect
+      summary: organizations a user belongs to (all of them with the user's own token)
+      x-cli: gitrecon orgs <user>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/org-repos:
+    post:
+      operationId: command_org_repos
+      tags:
+      - collect
+      summary: repositories of an organization
+      x-cli: gitrecon org-repos <org>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org:
+                  type: string
+                  description: organization login, e.g. The-Apokryf
+                no_forks:
+                  type: boolean
+                  description: leave forks out
+                no_archived:
+                  type: boolean
+                  description: leave archived repositories out
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - org
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/repo-clone:
+    post:
+      operationId: command_repo_clone
+      tags:
+      - collect
+      summary: clone the repositories a user owns into PATH/<name>
+      x-cli: gitrecon repo-clone <user> [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                path:
+                  type: string
+                  description: 'where the clones go, PATH/<name> (created when missing); default: <forge>/<USER
+                    or ORG>/, i.e. ~/__WORKSHOP/forge/<name>/'
+                limit:
+                  type: integer
+                  description: only the first N (oldest first)
+                depth:
+                  type: integer
+                  description: shallow clones, e.g. 1 = newest commit only (much smaller)
+                update:
+                  type: boolean
+                  description: fast-forward clones that exist already
+                dry_run:
+                  type: boolean
+                  description: list what would be cloned and its size, clone nothing
+                no_analysis:
+                  type: boolean
+                  description: 'only clone: by default every clone is analysed (languages, frameworks) and the result
+                    kept in the raw buffer and the map dataset'
+                map_priv_repos:
+                  type: boolean
+                  description: write the analysis of private repositories to the map dataset too
+                privacy:
+                  type: string
+                  enum:
+                  - public
+                  - all
+                  description: 'all: private too (own token)'
+                  default: public
+                no_forks:
+                  type: boolean
+                  description: leave forks out
+                no_archived:
+                  type: boolean
+                  description: leave archived repositories out
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/org-clone:
+    post:
+      operationId: command_org_clone
+      tags:
+      - collect
+      summary: clone the repositories of an organization into PATH/<name>
+      x-cli: gitrecon org-clone <org> [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org:
+                  type: string
+                  description: organization login, e.g. The-Apokryf
+                path:
+                  type: string
+                  description: 'where the clones go, PATH/<name> (created when missing); default: <forge>/<USER
+                    or ORG>/, i.e. ~/__WORKSHOP/forge/<name>/'
+                limit:
+                  type: integer
+                  description: only the first N (oldest first)
+                depth:
+                  type: integer
+                  description: shallow clones, e.g. 1 = newest commit only (much smaller)
+                update:
+                  type: boolean
+                  description: fast-forward clones that exist already
+                dry_run:
+                  type: boolean
+                  description: list what would be cloned and its size, clone nothing
+                no_analysis:
+                  type: boolean
+                  description: 'only clone: by default every clone is analysed (languages, frameworks) and the result
+                    kept in the raw buffer and the map dataset'
+                map_priv_repos:
+                  type: boolean
+                  description: write the analysis of private repositories to the map dataset too
+                no_forks:
+                  type: boolean
+                  description: leave forks out
+                no_archived:
+                  type: boolean
+                  description: leave archived repositories out
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - org
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/stars:
+    post:
+      operationId: command_stars
+      tags:
+      - collect
+      summary: list repositories starred by a user
+      x-cli: gitrecon stars <user>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                save:
+                  type: boolean
+                  description: also store them in the raw buffer
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/archive:
+    post:
+      operationId: command_archive
+      tags:
+      - collect
+      summary: download GH Archive hours into the raw buffer
+      x-cli: gitrecon archive <start> [end]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start:
+                  type: string
+                  description: YYYY-MM-DD-H (UTC)
+                end:
+                  type: string
+                  description: YYYY-MM-DD-H, inclusive
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - start
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/links:
+    post:
+      operationId: command_links
+      tags:
+      - collect
+      summary: harvest data source links from cloned gists (or any notes)
+      x-cli: gitrecon links [root]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                root:
+                  type: string
+                  description: 'directory holding gist clones (default: ..)'
+                  default: ..
+                all:
+                  type: boolean
+                  description: scan every note file under root, not only gists
+                kind:
+                  type: array
+                  items:
+                    type: string
+                  description: keep only this kind (repeatable), e.g. feed
+                save:
+                  type: boolean
+                  description: write the catalog to data/catalog/links.jsonl
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/feeds:
+    post:
+      operationId: command_feeds
+      tags:
+      - collect
+      summary: 'read RSS/Atom feeds (default: feeds in the link catalog)'
+      x-cli: gitrecon feeds [url]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: array
+                  items:
+                    type: string
+                save:
+                  type: boolean
+                  description: store new items in the raw buffer
+                verbose_items:
+                  type: boolean
+                  description: list new items
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/rfc:
+    post:
+      operationId: command_rfc
+      tags:
+      - collect
+      summary: 'RFC Editor index: list, search, save'
+      x-cli: gitrecon rfc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search:
+                  type: array
+                  items:
+                    type: string
+                  description: words that must all appear in the entry
+                number:
+                  type: array
+                  items:
+                    type: string
+                  description: show one RFC in full (repeatable)
+                limit:
+                  type: integer
+                  description: newest N when not searching
+                  default: 20
+                save:
+                  type: boolean
+                  description: write data/catalog/rfc-index.jsonl
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/blog:
+    post:
+      operationId: command_blog
+      tags:
+      - collect
+      summary: 'harvest articles of a blog as markdown (default: Apokryf)'
+      x-cli: gitrecon blog [url]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  default: https://blog.apokryf.pl
+                limit:
+                  type: integer
+                dump:
+                  type: boolean
+                  description: print articles in the notebook's dump format
+                save:
+                  type: boolean
+                  description: store articles in the raw buffer
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/map:
+    post:
+      operationId: command_map
+      tags:
+      - analyze
+      summary: build the activity graph from the raw buffer
+      x-cli: gitrecon map
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  description: 'events | gists | gharchive (default: all)'
+                node:
+                  type: string
+                  description: show neighbors of a key, e.g. user:octocat
+                full:
+                  type: boolean
+                  description: 'every edge (with --json: all nodes and edges)'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/network:
+    post:
+      operationId: command_network
+      tags:
+      - analyze
+      summary: 'relations around a user: repositories, organizations, where forks come from'
+      x-cli: gitrecon network <user>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: string
+                  description: GitHub nickname, e.g. sarverott
+                format:
+                  type: string
+                  enum:
+                  - summary
+                  - mermaid
+                  - mindmap
+                  - dot
+                  description: summary (default), a Mermaid flowchart, a Mermaid mindmap of the owner, or Graphviz
+                    DOT
+                  default: summary
+                max_repos:
+                  type: integer
+                  description: 'mindmap: repositories shown per owner (most starred)'
+                  default: 10
+                level:
+                  type: string
+                  enum:
+                  - owners
+                  - repos
+                  description: 'diagram zoom: owners (who forks from whom) or repositories grouped by owner'
+                  default: owners
+                min_forks:
+                  type: integer
+                  description: 'owners level: draw fork flows of at least N'
+                  default: 1
+                max_nodes:
+                  type: integer
+                  description: 'repos level: most connected N repositories'
+                  default: 150
+                forks_only:
+                  type: boolean
+                  description: 'repos level: only repositories in a fork relation'
+                no_orgs:
+                  type: boolean
+                  description: only the user's own repositories
+                privacy:
+                  type: string
+                  enum:
+                  - public
+                  - all
+                  description: 'all: private too (own token)'
+                  default: public
+                limit:
+                  type: integer
+                  description: 'summary: how many fork flows to list'
+                  default: 25
+                save:
+                  type: boolean
+                  description: write the diagram to data/networks/<user>-<level>.md
+                verbose_progress:
+                  type: boolean
+                  description: say what is being collected
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - user
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/analyze:
+    post:
+      operationId: command_analyze
+      tags:
+      - analyze
+      summary: 'what cloned repositories are made of: languages, structure, frameworks'
+      x-cli: gitrecon analyze [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: array
+                  items:
+                    type: string
+                  description: 'repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default:
+                    .)'
+                  default:
+                  - .
+                limit:
+                  type: integer
+                  description: 'languages listed per repository (pie: slices)'
+                  default: 8
+                format:
+                  type: string
+                  enum:
+                  - summary
+                  - pie
+                  description: summary (default) or a Mermaid pie of the languages, all given repositories together
+                  default: summary
+                deep:
+                  type: boolean
+                  description: 'CaptorLex step 1: also functions, methods, classes per language (tree-sitter; code
+                    extra)'
+                map_priv_repos:
+                  type: boolean
+                  description: write private repositories to the map dataset too (by default only public ones; the
+                    map gets published)
+                no_save:
+                  type: boolean
+                  description: 'only print: by default results go to the raw buffer and the map dataset'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/commits:
+    post:
+      operationId: command_commits
+      tags:
+      - analyze
+      summary: 'a cloned repository''s commit messages read as records: types, scopes, labels'
+      x-cli: gitrecon commits [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                max_commits:
+                  type: integer
+                  description: 'only the newest N (default: all)'
+                list:
+                  type: boolean
+                  description: also every commit with its form and type
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/imports:
+    post:
+      operationId: command_imports
+      tags:
+      - analyze
+      summary: which file uses which inside a cloned repository (CaptorLex step 2)
+      x-cli: gitrecon imports [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                format:
+                  type: string
+                  enum:
+                  - summary
+                  - mermaid
+                  default: summary
+                level:
+                  type: string
+                  enum:
+                  - folder
+                  - file
+                  description: 'mermaid: folders (default) or files'
+                  default: folder
+                depth:
+                  type: integer
+                  description: 'folder level: how many path parts make a folder'
+                  default: 3
+                max_nodes:
+                  type: integer
+                  description: 'file level: draw the N most connected files'
+                  default: 80
+                limit:
+                  type: integer
+                  description: 'summary: rows per list'
+                  default: 8
+                save:
+                  type: boolean
+                  description: write the diagram to data/imports/<repository>-<level>.md
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/contributors:
+    post:
+      operationId: command_contributors
+      tags:
+      - analyze
+      summary: 'who made a cloned repository: commits, lines, dates; AUTHORS text; pie'
+      x-cli: gitrecon contributors [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                format:
+                  type: string
+                  enum:
+                  - list
+                  - authors
+                  - pie
+                  description: list (default), the text of an AUTHORS file, or a Mermaid pie
+                  default: list
+                by:
+                  type: string
+                  enum:
+                  - commits
+                  - lines
+                  - added
+                  description: 'pie: what a slice measures'
+                  default: commits
+                top:
+                  type: integer
+                  description: 'pie: slices before the rest becomes ''others'''
+                  default: 12
+                max_commits:
+                  type: integer
+                  description: 'only the newest N commits (default: all)'
+                ignorelist:
+                  type: string
+                  description: 'skip the identities listed in FILE (default list: resources/ignorelist.txt - bots):
+                    they are not listed, credited or drawn'
+                save:
+                  type: boolean
+                  description: 'write data/contributors/<repository>.AUTHORS (pie: <repository>-<by>.md)'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/relations:
+    post:
+      operationId: command_relations
+      tags:
+      - analyze
+      summary: ties between an owner's cloned repositories (a folder of clones), or what one repository holds on
+        to outside itself (a clone)
+      x-cli: gitrecon relations <path>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: a folder of clones, e.g. ~/__WORKSHOP/forge/rattish - or one repository
+                offline:
+                  type: boolean
+                  description: 'one repository: do not ask GitHub whether it is a fork'
+                format:
+                  type: string
+                  enum:
+                  - summary
+                  - mermaid
+                  default: summary
+                all:
+                  type: boolean
+                  description: 'mermaid: draw repositories without ties too'
+                save:
+                  type: boolean
+                  description: write the diagram to data/relations/<folder>.md
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - path
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/score:
+    post:
+      operationId: command_score
+      tags:
+      - analyze
+      summary: 'a cloned repository''s history as music: guitar tab, ABC notation or MIDI'
+      x-cli: gitrecon score [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                format:
+                  type: string
+                  enum:
+                  - tab
+                  - abc
+                  - midi
+                  description: tab (default), abc, or midi - written to data/scores/<repository>.mid
+                  default: tab
+                max_commits:
+                  type: integer
+                  description: 'play the newest N commits (0: all)'
+                  default: 64
+                tempo:
+                  type: integer
+                  description: 'midi: quarter notes per minute'
+                  default: 96
+                contributors_band_mode:
+                  type: boolean
+                  description: 'an instrument per contributor: the busiest plays guitar, then bass, piano, violin
+                    ...'
+                ignorelist:
+                  type: string
+                  description: 'skip the identities listed in FILE (default list: resources/ignorelist.txt - bots):
+                    their commits are silent and they get no instrument'
+                save:
+                  type: boolean
+                  description: 'tab, abc: also write data/scores/<repository>.abc | .tab.txt'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/gitgraph:
+    post:
+      operationId: command_gitgraph
+      tags:
+      - analyze
+      summary: a cloned repository's history across all branches, as a Mermaid gitGraph
+      x-cli: gitrecon gitgraph [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                format:
+                  type: string
+                  enum:
+                  - summary
+                  - mermaid
+                  description: summary of lanes (default) or the Mermaid script
+                  default: summary
+                max_commits:
+                  type: integer
+                  description: 'draw the newest N commits (0: all)'
+                  default: 150
+                labels:
+                  type: boolean
+                  description: show commit subjects next to the commits
+                save:
+                  type: boolean
+                  description: write the diagram to data/gitgraphs/<repository>.md
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/label:
+    post:
+      operationId: command_label
+      tags:
+      - analyze
+      summary: conclude labels from the raw buffer
+      x-cli: gitrecon label
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                name:
+                  type: array
+                  items:
+                    type: string
+                  description: only this label (repeatable), e.g. star-burst
+                limit:
+                  type: integer
+                  description: 'how many to print as text (machine output: all)'
+                  default: 50
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/status:
+    post:
+      operationId: command_status
+      tags:
+      - analyze
+      summary: show raw buffer contents
+      x-cli: gitrecon status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/atlas:
+    post:
+      operationId: command_atlas
+      tags:
+      - atlas
+      summary: the map dataset on Hugging Face (datasets/imperialmap)
+      x-cli: gitrecon atlas <action>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                  - pull
+                  - status
+                  - update
+                  - push
+                repo:
+                  type: string
+                  default: Apokryf/minimap-of-uce
+                message:
+                  type: string
+                  description: commit message (push)
+                pr:
+                  type: boolean
+                  description: push as a pull request on the Hub
+                no_meta:
+                  type: boolean
+                  description: 'update: skip GitHub /meta networks'
+                heavy:
+                  type: boolean
+                  description: 'update: include the ~7k GitHub Actions CIDRs'
+                stars:
+                  type: array
+                  items:
+                    type: string
+                  description: 'update: add owners of repos starred by USER to user-namespace (repeatable)'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  - urls
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - action
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/digest:
+    post:
+      operationId: command_digest
+      tags:
+      - content
+      summary: summarize big data with a local Ollama model (map-reduce)
+      x-cli: gitrecon digest <input>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input:
+                  type: string
+                  description: stars:USER | labels[:SOURCE] | links | file:PATH
+                model:
+                  type: string
+                  description: 'Ollama model (default: $OLLAMA_MODEL or llama3)'
+                topic:
+                  type: string
+                chunk_chars:
+                  type: integer
+                  default: 16000
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - input
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/posts:
+    post:
+      operationId: command_posts
+      tags:
+      - content
+      summary: write SEO article + tweets from a digest with xAI (drafts only)
+      x-cli: gitrecon posts [summary]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                summary:
+                  type: string
+                  description: digest markdown file
+                model:
+                  type: string
+                  description: 'xAI model (default: $XAI_MODEL or grok-4)'
+                language:
+                  type: string
+                  default: English
+                list_models:
+                  type: boolean
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/text:
+    post:
+      operationId: command_text
+      tags:
+      - content
+      summary: markdown/tokenizer/RAT experiments and requirement sentences of a URL or file
+      x-cli: gitrecon text <action> [url]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                  - toc
+                  - tokens
+                  - rat
+                  - requirements
+                url:
+                  type: string
+                  description: a URL or a local file
+                  default: https://taskfile.dev/llms.txt
+                raw:
+                  type: boolean
+                  description: 'requirements: the text is plain (an RFC .txt), not markdown'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - action
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/translate:
+    post:
+      operationId: command_translate
+      tags:
+      - content
+      summary: 'offline translation with Argos Translate: text, languages, install'
+      x-cli: gitrecon translate <action> [words]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                  - text
+                  - languages
+                  - install
+                words:
+                  type: array
+                  items:
+                    type: string
+                  description: 'text: the words (or - for stdin); install: FROM TO language codes'
+                source:
+                  type: string
+                  description: 'text: source language code, e.g. en'
+                to:
+                  type: string
+                  description: 'text: target language code, e.g. pl'
+                available:
+                  type: boolean
+                  description: 'languages: what the Argos index offers, not what is installed'
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+              required:
+              - action
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/save:
+    post:
+      operationId: command_save
+      tags:
+      - content
+      summary: commit everything that changed as one commit; the message is written for you
+      x-cli: gitrecon save [path]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: 'the repository (default: the current folder)'
+                  default: .
+                dry_run:
+                  type: boolean
+                  description: show the message, commit nothing
+                output:
+                  type: string
+                  enum:
+                  - text
+                  - json
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /commands/openapi:
+    post:
+      operationId: command_openapi
+      tags:
+      - content
+      summary: gitrecon's commands and tasks as one OpenAPI document (generated)
+      x-cli: gitrecon openapi
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum:
+                  - yaml
+                  - json
+                  default: yaml
+                output:
+                  type: string
+                  enum:
+                  - text
+                  default: text
+                  description: 'text for people; json / urls: data only'
+              additionalProperties: false
+      responses:
+        '200':
+          description: the command's output
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: the command refused the arguments or failed
+  /tasks/bump:
+    post:
+      operationId: task_bump
+      tags:
+      - 'task: project'
+      summary: Bump version, changelog and tag (CI does this on every merge into master, don't run it by hand there)
+      x-cli: task bump -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+              additionalProperties: false
+  /tasks/commit:
+    post:
+      operationId: task_commit
+      tags:
+      - 'task: project'
+      summary: Commit with commitizen (conventional message prompt); routines from .husky/bos.config.json apply
+      x-cli: task commit
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-interactive: true
+  /tasks/help:
+    post:
+      operationId: task_help
+      tags:
+      - 'task: project'
+      summary: List every task, and where to read more
+      x-cli: task help
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/install:
+    post:
+      operationId: task_install
+      tags:
+      - 'task: project'
+      summary: Install uv dependencies and the git hooks (husky)
+      x-cli: task install
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/lint:
+    post:
+      operationId: task_lint
+      tags:
+      - 'task: project'
+      summary: Lint workflows and delegated scripts
+      x-cli: task lint
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/listen:
+    post:
+      operationId: task_listen
+      tags:
+      - 'task: project'
+      summary: Keep listening on a feed, e.g. `task listen -- org:github`
+      x-cli: task listen -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - org:github
+              additionalProperties: false
+  /tasks/manuals:
+    post:
+      operationId: task_manuals
+      tags:
+      - 'task: project'
+      summary: Read the markdown docs in docs/ in the terminal, e.g. task manuals -- map-dataset
+      x-cli: task manuals -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - map-dataset
+              additionalProperties: false
+      x-interactive: true
+  /tasks/menu:
+    post:
+      operationId: task_menu
+      tags:
+      - 'task: project'
+      summary: Interactive menu - commands, tasks, examples, manuals, status (arrows + enter)
+      x-cli: task menu
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-interactive: true
+  /tasks/openapi:
+    post:
+      operationId: task_openapi
+      tags:
+      - 'task: project'
+      summary: Regenerate resources/openapi/gitrecon.openapi.yaml from the commands and this Taskfile
+      x-cli: task openapi
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/recon:
+    post:
+      operationId: task_recon
+      tags:
+      - 'task: project'
+      summary: Run the gitrecon CLI, e.g. `task recon -- stars sarverott`
+      x-cli: task recon -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - stars sarverott
+              additionalProperties: false
+  /tasks/save:
+    post:
+      operationId: task_save
+      tags:
+      - 'task: project'
+      summary: Commit everything that changed as one commit - the message is written for you (hooks run, autopush
+        applies)
+      x-cli: task save
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/scrapnote:
+    post:
+      operationId: task_scrapnote
+      tags:
+      - 'task: project'
+      summary: Start a scrapnote in docs/devlog/ named by the current moment (UNIXUSAT, milliseconds)
+      x-cli: task scrapnote -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+              additionalProperties: false
+  /tasks/sync:
+    post:
+      operationId: task_sync
+      tags:
+      - 'task: project'
+      summary: Copy shared info from metadata.json into package.json, pyproject.toml and lockfiles
+      x-cli: task sync
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/test:
+    post:
+      operationId: task_test
+      tags:
+      - 'task: project'
+      summary: Run the offline test suite and the metadata sync check
+      x-cli: task test -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+              additionalProperties: false
+  /tasks/docker:build:
+    post:
+      operationId: task_docker_build
+      tags:
+      - 'task: docker'
+      summary: Build the gitrecon image (gitrecon:local)
+      x-cli: task docker:build
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/docker:listen:
+    post:
+      operationId: task_docker_listen
+      tags:
+      - 'task: docker'
+      summary: 'Listen on a feed in the background, e.g. task docker:listen -- org:github (default: public)'
+      x-cli: task docker:listen -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - org:github
+              additionalProperties: false
+  /tasks/docker:run:
+    post:
+      operationId: task_docker_run
+      tags:
+      - 'task: docker'
+      summary: Run the CLI in a container, e.g. task docker:run -- stars sarverott
+      x-cli: task docker:run -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - stars sarverott
+              additionalProperties: false
+      x-interactive: true
+  /tasks/docker:stop:
+    post:
+      operationId: task_docker_stop
+      tags:
+      - 'task: docker'
+      summary: Stop the background listener
+      x-cli: task docker:stop
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/docs:build:
+    post:
+      operationId: task_docs_build
+      tags:
+      - 'task: docs'
+      summary: Build the docs site into site/ and fail on any warning (as Read the Docs does)
+      x-cli: task docs:build
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/docs:lock:
+    post:
+      operationId: task_docs_lock
+      tags:
+      - 'task: docs'
+      summary: After editing docs/pyproject.toml, refresh uv.lock and the requirements.txt Read the Docs installs
+      x-cli: task docs:lock
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/docs:serve:
+    post:
+      operationId: task_docs_serve
+      tags:
+      - 'task: docs'
+      summary: Live preview of the docs site at http://127.0.0.1:8000
+      x-cli: task docs:serve
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/examples:clean:
+    post:
+      operationId: task_examples_clean
+      tags:
+      - 'task: examples'
+      summary: Clear outputs and executed copies of every example
+      x-cli: task examples:clean
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/examples:launch:
+    post:
+      operationId: task_examples_launch
+      tags:
+      - 'task: examples'
+      summary: Open Jupyter on all examples
+      x-cli: task examples:launch
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/examples:list:
+    post:
+      operationId: task_examples_list
+      tags:
+      - 'task: examples'
+      summary: List examples with their notebooks
+      x-cli: task examples:list
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/examples:marimo:
+    post:
+      operationId: task_examples_marimo
+      tags:
+      - 'task: examples'
+      summary: Convert every example notebook to marimo (examples/<title>/marimo/*.py)
+      x-cli: task examples:marimo
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/examples:run:
+    post:
+      operationId: task_examples_run
+      tags:
+      - 'task: examples'
+      summary: Execute examples headless, all or the ones named, e.g. task examples:run -- getting-started
+      x-cli: task examples:run -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - getting-started
+              additionalProperties: false
+  /tasks/gh:dist:
+    post:
+      operationId: task_gh_dist
+      tags:
+      - 'task: gh'
+      summary: Build the wheel and sdist like the release job does
+      x-cli: task gh:dist
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/gh:lint:
+    post:
+      operationId: task_gh_lint
+      tags:
+      - 'task: gh'
+      summary: Check the workflow files with actionlint
+      x-cli: task gh:lint
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/gh:loop:
+    post:
+      operationId: task_gh_loop
+      tags:
+      - 'task: gh'
+      summary: Show how .github/bos.config.json resolves (stages, auto-merge, versioning)
+      x-cli: task gh:loop
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/gh:release:notes:
+    post:
+      operationId: task_gh_release_notes
+      tags:
+      - 'task: gh'
+      summary: Print the release notes CI would publish, e.g. task gh:release:notes TAG=v0.1.0
+      x-cli: task gh:release:notes
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                TAG:
+                  type: string
+              additionalProperties: false
+              required:
+              - TAG
+  /tasks/hooks:commit-msg:
+    post:
+      operationId: task_hooks_commit_msg
+      tags:
+      - 'task: hooks'
+      summary: Reject commit messages that are not Conventional Commits, e.g. task hooks:commit-msg -- .git/COMMIT_EDITMSG
+      x-cli: task hooks:commit-msg -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - .git/COMMIT_EDITMSG
+              additionalProperties: false
+  /tasks/hooks:post-commit:
+    post:
+      operationId: task_hooks_post_commit
+      tags:
+      - 'task: hooks'
+      summary: Push the branch, if auto_push_after_commit is on (never master, never mid-rebase)
+      x-cli: task hooks:post-commit
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/hooks:pre-commit:
+    post:
+      operationId: task_hooks_pre_commit
+      tags:
+      - 'task: hooks'
+      summary: Stage all (routine), sync metadata.json into manifests and lockfiles, stage them, then run the checks
+        and tests
+      x-cli: task hooks:pre-commit
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/hooks:routine:add-all:
+    post:
+      operationId: task_hooks_routine_add_all
+      tags:
+      - 'task: hooks'
+      summary: Stage all changes, if auto_gitaddall_before_commit is on
+      x-cli: task hooks:routine:add-all
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/hooks:routines:
+    post:
+      operationId: task_hooks_routines
+      tags:
+      - 'task: hooks'
+      summary: Show which routines .husky/bos.config.json switches on
+      x-cli: task hooks:routines
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/map:push:
+    post:
+      operationId: task_map_push
+      tags:
+      - 'task: map'
+      summary: Push the map to Hugging Face, e.g. task map:push -- -m "dnstrees from gists"
+      x-cli: task map:push -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+                  examples:
+                  - -m "dnstrees from gists"
+              additionalProperties: false
+  /tasks/map:refresh:
+    post:
+      operationId: task_map_refresh
+      tags:
+      - 'task: map'
+      summary: Pull the map dataset, harvest gist links and write findings into it (no push)
+      x-cli: task map:refresh
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/merge:check:
+    post:
+      operationId: task_merge_check
+      tags:
+      - 'task: merge'
+      summary: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
+      x-cli: task merge:check
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/merge:remote:
+    post:
+      operationId: task_merge_remote
+      tags:
+      - 'task: merge'
+      summary: Bring the remote version of the branch in (after "push rejected") - fast-forward or merge; never
+        pushes
+      x-cli: task merge:remote
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/scripts:lint:
+    post:
+      operationId: task_scripts_lint
+      tags:
+      - 'task: scripts'
+      summary: Check the shell scripts (delegated CI steps) with shellcheck
+      x-cli: task scripts:lint
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/scripts:merge:check:
+    post:
+      operationId: task_scripts_merge_check
+      tags:
+      - 'task: scripts'
+      summary: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
+      x-cli: task scripts:merge:check
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/scripts:merge:remote:
+    post:
+      operationId: task_scripts_merge_remote
+      tags:
+      - 'task: scripts'
+      summary: Bring the remote version of the branch in - fast-forward or merge; never pushes
+      x-cli: task scripts:merge:remote -- <args>
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                args:
+                  type: string
+                  description: what follows `--` on the command line
+              additionalProperties: false
+  /tasks/scripts:sync:
+    post:
+      operationId: task_scripts_sync
+      tags:
+      - 'task: scripts'
+      summary: Copy shared info from metadata.json into package.json, pyproject.toml and lockfiles
+      x-cli: task scripts:sync
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string
+  /tasks/scripts:sync:check:
+    post:
+      operationId: task_scripts_sync_check
+      tags:
+      - 'task: scripts'
+      summary: Fail if package.json or pyproject.toml drifted from metadata.json
+      x-cli: task scripts:sync:check
+      responses:
+        '200':
+          description: the task's output
+          content:
+            text/plain:
+              schema:
+                type: string

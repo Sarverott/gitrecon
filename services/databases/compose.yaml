@@ -1,6 +1,0 @@
-# Shared databases: one instance of each, used by the services of every other group.
-include:
-  - ./postgres.compose.yaml
-  - ./mariadb.compose.yaml
-  - ./redis.compose.yaml
-  - ./chromadb.compose.yaml

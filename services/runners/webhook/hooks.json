@@ -1,8 +1,0 @@
-[
-  {
-    "id": "ping",
-    "execute-command": "/bin/echo",
-    "pass-arguments-to-command": [{"source": "string", "name": "pong"}],
-    "include-command-output-in-response": true
-  }
-]
