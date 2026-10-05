@@ -1,0 +1,85 @@
+# Which files are which language, and which lexical grammar reads them.
+#
+# families:  a lexical grammar (grammars/lexical/<name>.lark) and the keywords of its languages
+#            (left out of identifier statistics); quote true/false/null/yes/no/on - YAML
+#            reads them as booleans otherwise
+# languages: extensions and exact file names; `family` for languages the lexer can read,
+#            `kind` says what the files are: code (default) | markup | data | prose | config;
+#            `structure` names the tree-sitter grammar CaptorLex reads the language with
+
+families:
+  c_family:
+    keywords: [if, else, for, while, do, switch, case, break, continue, return, function, var, let, const,
+               class, struct, enum, interface, extends, implements, new, this, super, import, export, from,
+               default, public, private, protected, static, final, void, int, long, float, double, char,
+               bool, boolean, string, "true", "false", "null", undefined, try, catch, finally, throw, throws,
+               async, await, typeof, instanceof, package, namespace, using, fn, impl, pub, mut, use, mod,
+               func, type, defer, go, chan, range, echo, require, include, virtual, override, template,
+               typename, unsigned, signed, sizeof, auto, val, fun, when, object, in, of, as, is, yield]
+  python:
+    keywords: [and, as, assert, async, await, break, class, continue, def, del, elif, else, except, finally,
+               for, from, global, if, import, in, is, lambda, nonlocal, not, or, pass, raise, return, try,
+               while, with, yield, "True", "False", "None", self, cls, match, case]
+  hash_family:
+    keywords: [if, then, else, elif, fi, for, in, do, done, while, case, esac, function, return, exit, echo,
+               export, local, set, unset, end, def, class, module, require, include, begin, rescue, ensure,
+               "true", "false", nil, "null", "yes", "no", FROM, RUN, COPY, ENV, CMD, ENTRYPOINT, ARG, WORKDIR, USER]
+  dash_family:
+    keywords: [select, from, where, insert, into, values, update, set, delete, create, table, drop, alter,
+               join, left, right, inner, outer, "on", and, or, not, "null", as, order, by, group, having,
+               limit, local, function, end, then, if, else, elseif, return, for, do, while, nil, "true",
+               "false", let, in, where, module, import, data, type, case, of]
+  markup:
+    keywords: [div, span, class, id, style, script, html, head, body, href, src, link, meta, title, type,
+               name, content, rel, alt, width, height, template, slot]
+
+languages:
+  Python:      {structure: python, family: python, extensions: [.py, .pyi, .pyw]}
+  Jupyter Notebook: {kind: data, extensions: [.ipynb]}
+  JavaScript:  {structure: javascript, family: c_family, extensions: [.js, .mjs, .cjs, .jsx]}
+  TypeScript:  {structure: typescript, family: c_family, extensions: [.ts, .tsx, .mts, .cts]}
+  PHP:         {structure: php, family: c_family, extensions: [.php, .ctp, .phtml]}
+  C:           {structure: c, family: c_family, extensions: [.c, .h]}
+  C++:         {structure: cpp, family: c_family, extensions: [.cpp, .cc, .cxx, .hpp, .hh, .ino]}
+  C#:          {structure: csharp, family: c_family, extensions: [.cs]}
+  Java:        {structure: java, family: c_family, extensions: [.java]}
+  Kotlin:      {structure: kotlin, family: c_family, extensions: [.kt, .kts]}
+  Swift:       {structure: swift, family: c_family, extensions: [.swift]}
+  Go:          {structure: go, family: c_family, extensions: [.go]}
+  Go Module:   {kind: config, filenames: [go.mod, go.sum]}
+  Rust:        {structure: rust, family: c_family, extensions: [.rs]}
+  Dart:        {structure: dart, family: c_family, extensions: [.dart]}
+  Scala:       {structure: scala, family: c_family, extensions: [.scala]}
+  Groovy:      {structure: groovy, family: c_family, extensions: [.groovy, .gradle]}
+  Solidity:    {structure: solidity, family: c_family, extensions: [.sol]}
+  CSS:         {family: c_family, extensions: [.css, .scss, .sass, .less]}
+  Shell:       {structure: bash, family: hash_family, extensions: [.sh, .bash, .zsh, .fish], filenames: [.bashrc, .zshrc]}
+  PowerShell:  {structure: powershell, family: hash_family, extensions: [.ps1, .psm1]}
+  Batch:       {extensions: [.bat, .cmd]}
+  Ruby:        {structure: ruby, family: hash_family, extensions: [.rb, .rake, .gemspec], filenames: [Gemfile, Rakefile]}
+  Perl:        {structure: perl, family: hash_family, extensions: [.pl, .pm]}
+  R:           {structure: r, family: hash_family, extensions: [.r, .R]}
+  Elixir:      {structure: elixir, family: hash_family, extensions: [.ex, .exs]}
+  Nim:         {structure: nim, family: hash_family, extensions: [.nim]}
+  Dockerfile:  {family: hash_family, kind: config, extensions: [.dockerfile], filenames: [Dockerfile, Containerfile]}
+  Makefile:    {family: hash_family, kind: config, extensions: [.mk], filenames: [Makefile, makefile, GNUmakefile]}
+  CMake:       {family: hash_family, kind: config, extensions: [.cmake], filenames: [CMakeLists.txt]}
+  YAML:        {family: hash_family, kind: config, extensions: [.yml, .yaml]}
+  TOML:        {family: hash_family, kind: config, extensions: [.toml]}
+  INI:         {kind: config, extensions: [.ini, .cfg, .conf, .env, .properties]}
+  SQL:         {family: dash_family, extensions: [.sql]}
+  Lua:         {structure: lua, family: dash_family, extensions: [.lua]}
+  Haskell:     {structure: haskell, family: dash_family, extensions: [.hs]}
+  Elm:         {structure: elm, family: dash_family, extensions: [.elm]}
+  HTML:        {family: markup, kind: markup, extensions: [.html, .htm, .xhtml]}
+  XML:         {family: markup, kind: markup, extensions: [.xml, .xsd, .xsl, .plist]}
+  SVG:         {family: markup, kind: markup, extensions: [.svg]}
+  Vue:         {family: markup, kind: markup, extensions: [.vue]}
+  Svelte:      {family: markup, kind: markup, extensions: [.svelte]}
+  Astro:       {family: markup, kind: markup, extensions: [.astro]}
+  Lark:        {extensions: [.lark]}
+  JSON:        {kind: data, extensions: [.json, .jsonl, .geojson]}
+  CSV:         {kind: data, extensions: [.csv, .tsv]}
+  Markdown:    {kind: prose, extensions: [.md, .markdown, .mdx]}
+  reStructuredText: {kind: prose, extensions: [.rst]}
+  Text:        {kind: prose, extensions: [.txt]}

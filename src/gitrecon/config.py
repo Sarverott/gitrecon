@@ -32,6 +32,22 @@ def forge_dir() -> Path:
     return Path.home() / "__WORKSHOP" / "forge"
 
 
+def resources_dir() -> Path:
+    """Where grammars and knowledge tables live: ``GITRECON_RESOURCES``, else ``<project>/resources``."""
+    if os.environ.get("GITRECON_RESOURCES"):
+        return Path(os.environ["GITRECON_RESOURCES"]).expanduser()
+    return PROJECT_ROOT / "resources"
+
+
+def resource(*parts: str) -> Path:
+    """A file under :func:`resources_dir`; a clear error when the resources are not there."""
+    path = resources_dir().joinpath(*parts)
+    if not path.exists():
+        raise FileNotFoundError(f"{path} is missing - resources/ ships with the repository; "
+                                "point GITRECON_RESOURCES at it when gitrecon is installed elsewhere")
+    return path
+
+
 def env_files() -> list[Path]:
     """Dotenv files to read, most specific first.
 

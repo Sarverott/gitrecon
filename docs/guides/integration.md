@@ -47,6 +47,13 @@ gitrecon events org:github --watch --json | my-consumer   # JSON Lines, one even
 | `blog` | `[article]` with `markdown` | articles |
 | `map` | summary `{nodes, edges, relations, hubs: [{key, degree, url}]}`; `--node`: `[{relation, key, url}]`; `--full`: `{nodes, edges}` | hubs / neighbours / every node |
 | `network USER` | `{nodes: [{key, kind, name, url, fork, stars, language}], edges: [{source, relation, target}], owners, owner_forks: [{source, target, count}], notes}` | every node |
+| `analyze [PATH...]` | `[{name, path, files, main_language, languages: {name: {kind, files, bytes, lines, code, comment, blank}}, frameworks, dependencies, names, urls, python}]` | links found in code |
+| `commits [PATH]` | `{repository, target, summary: {commits, own, forms, conventional_share, types, work, scopes, breaking}, labels, commits}` | - |
+| `text requirements` | `[{level, keywords, sentence, line}]` | - |
+| `translate text` | `{from, to, text, translation}`; `languages`: `[{code, name, to}]`; `install`: `{from, to, status}` | - |
+| `imports [PATH]` | `{name, languages, files, edges: [[from, to]], most_used, uses_most, unconnected, cycles, external, mermaid}` | - |
+| `score [PATH]` | `{repository, format, lanes, score, notes: [{sha, lane, string, frets, eighths, pitches, tag}]}`; midi: `{repository, notes, file}` | - |
+| `gitgraph [PATH]` | `{repository, lanes: {lane: commits}, commits: [{sha, parents, lane, time, author, subject, tags}]}` | - |
 | `label` | `[{name, target, confidence, evidence, details, url}]` | labeled entities |
 | `status` | `{data_dir, datasets_dir, token, sources}` | - |
 | `atlas ACTION` | `{repo, url, path, areas}` / `{root, changed}` / `{commit}` | dataset page / commit |

@@ -18,6 +18,37 @@ On every commit the hooks:
 
 Work on `development`, or on `feature/<name>` / `fix/<name>` branches.
 
+## When the push is refused: merging the remote in
+
+Every release ends with `master` merged back into `development` on GitHub (the version bump
+and the changelog). A commit made here before pulling that makes the two versions of
+`development` diverge, and the push after the commit is refused.
+
+```sh
+task merge:check      # look only: how far apart, would it conflict, in which files
+task merge:remote     # do it: fast-forward, or a merge commit when both sides have commits
+task test && git push
+```
+
+`merge:remote` fetches, tries the merge in memory first, refuses to work over uncommitted
+changes, and never pushes or rewrites commits. What it prints at the end is the way back:
+`git reset --hard <commit>` (only before pushing).
+
+If both sides changed the same lines it stops with the files listed. Open each, keep what is
+right between the `<<<<<<<`, `=======`, `>>>>>>>` marks, then:
+
+```sh
+git add <files> && git merge --continue && uv lock && task test
+git merge --abort        # or give up: back to exactly where you were
+```
+
+Conflicts in `uv.lock` and `package-lock.json` are settled for you (remote side, then
+re-locked). The usual real conflict is the `version` line of `pyproject.toml`,
+`metadata.json`, `package.json` or `src/gitrecon/__init__.py`: keep the remote (higher) one.
+
+> **Remember!** To avoid it: `task merge:remote` before starting work after a release went
+> through the loop.
+
 ## The loop
 
 ```

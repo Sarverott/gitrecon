@@ -24,8 +24,14 @@ src/gitrecon/
 │                   feeds (RSS/Atom/RDF), rfc_index (RFC Editor index), blog (articles + feed discovery)
 ├── storage/        rawbuffer — append-only gzip JSONL, data/raw/<source>/<day>/<HH>.json.gz
 ├── mapping/        graph — ActivityGraph: entity nodes + evidenced edges; network — relations around a
-│                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON
+│                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON;
+│                   gitgraph — history across branches as a Mermaid gitGraph;
+│                   score — the same history as guitar tab, ABC, MIDI
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
+├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
+│                   analyze — all driven by resources/
+├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
+├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
 │                   user-namespace identities (namespace)
 ├── hub/            huggingface — MapDataset pull/push of Apokryf/minimap-of-uce
@@ -68,10 +74,60 @@ src/gitrecon/
 
 ## Container
 
-`Dockerfile` (python:3.12-alpine, two stages, only the venv is copied; `EXTRAS` build arg,
-hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
+`Dockerfile` (python:3.12-slim - the `llm` extra's onnxruntime has no Alpine build; two stages, the
+venv and `resources/` are copied, git installed; `EXTRAS` build arg, hub extra by default) + `compose.yaml` (service `gitrecon` for one-off commands, `listen`
 under the `listen` profile). `.dockerignore` is an allow-list: pyproject, lock, README, src.
 Runtime-only dependencies stay minimal - anything not imported by `src/` belongs in a group.
+
+## Reading code: PeekerLex and CaptorLex
+
+- **PeekerLex** = the quick reading (`gitrecon.code`: lexers, tables, manifests).
+  **CaptorLex** = the deep reading (structure -> relations -> meaning); step 1 exists:
+  `gitrecon.code.structure` (tree-sitter, `code` extra, `analyze --deep`) and `pyast`.
+  Step 2 inside one repository: `gitrecon.code.imports` (Python by `ast`, others by
+  `resources/imports.yml`; networkx for cycles). Next circles, in the user's order: between an
+  owner's repositories, then all known public ones. The user's names: use them.
+- Results are kept by default in both the raw buffer (`data/raw/analysis/`) and the map
+  (`data-heuristicality/code-analysis/<platform>/<owner>/<repo>.json`, `gitrecon.code.store`);
+  `analyze --no-save`, clone commands `--no-analysis`. Only repositories GitHub shows public go
+  to the map (`store.not_public`); `--map-priv-repos` writes the others too.
+- No Rattish grammar here: it belongs to the rattish project (`forge/rattish/rattish/TODO.md`).
+
+## Merging the remote in
+
+- `task merge:check` / `task merge:remote` (`scripts/merge_remote.py`): the procedure for a
+  diverged branch (the loop back-merges master into development on GitHub). Trial merge in
+  memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
+  take the remote side and re-lock; version lines: keep the remote one.
+
+## Humanish and translation
+
+- `gitrecon.humanish`: controlled sentences by grammar (`resources/grammars/humanish/`,
+  meanings in `resources/humanish.yml`) - commit messages (`commits`), requirement keywords
+  (`requirements`). Levels 2-3 (normative text, free text) are other projects' ground.
+- With Lark's Earley parser a terminal matches one way only: alternatives that share a prefix
+  (`BREAKING CHANGE` vs a word) need separate terminals.
+- `gitrecon.translate.argos`: Argos Translate behind `_argos()` (lazy import; tests fake it).
+
+## Dependencies
+
+- Core stays light; heavy libraries live in extras: `hub`, `llm` (chromadb, langchain, litellm,
+  nanobot, ollama, openai), `net` (paramiko, scapy), `code` (tree-sitter), `translate` (argostranslate; brings torch),
+  `all`. Import them lazily inside the
+  function that needs them. Coming groups (social media, translation, media generation) get
+  their own extras the same way.
+
+## Resources (resources/)
+
+- Knowledge is data: `languages.yml` (extensions, families, keywords), `frameworks.yml`
+  (manifests, packages, marker files), `grammars/` (Lark: `json.lark`, `lexical/<family>.lark`
+  with terminals COMMENT, STRING, NUMBER, NAME, OTHER). Read through
+  `gitrecon.config.resource()`; `GITRECON_RESOURCES` overrides the folder.
+- New language / framework / family = an edit there, not code; `tests/test_code.py` checks the
+  tables against each other. In YAML keyword lists quote `true`, `false`, `null`, `yes`, `no`, `on`.
+- `resources/locales/` and `resources/rss.json` are the user's, in progress: leave them.
+- Mermaid can be checked for real: `@mermaid-js/mermaid-cli` with a Chrome from
+  `~/.cache/puppeteer` (the snap Chromium cannot read /tmp).
 
 ## Cloning defaults
 
