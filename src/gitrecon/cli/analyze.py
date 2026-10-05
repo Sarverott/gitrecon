@@ -88,6 +88,208 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.code import analyze_repo, find_repos
+
+    if args.deep:
+        from gitrecon.code import structure
+
+        if not structure.available():
+            out.note("--deep needs the code extra (uv sync --extra code); continuing with the quick reading only")
+    repos = [repo for path in args.path for repo in find_repos(path)]
+    if not repos:
+        out.note(f"no repository in {', '.join(args.path)} (a folder with .git, or a folder of such folders)")
+        return 2
+    results = []
+    for repo in repos:
+        if len(repos) > 1:
+            out.note(f"analysing {repo.name}")
+        results.append(analyze_repo(repo, deep=args.deep))
+
+    def text(r: dict) -> str:
+        lines = [f"{r['name']}  ({r['files']} files, main language: {r['main_language'] or '-'})"]
+        for name, e in list(r["languages"].items())[: args.limit]:
+            detail = f"code {e['code']:>6}  comments {e['comment']:>5}" if e.get("code") else f"lines {e['lines']:>6}"
+            lines.append(f"  {name:<18} {e['files']:>5} files {e['bytes'] / 1024:>9.1f} KiB  {detail}")
+        if r["frameworks"]:
+            lines.append("  frameworks & tools: " + ", ".join(r["frameworks"]))
+        if py := r.get("python"):
+            lines.append(f"  python: {py['functions']} functions, {py['classes']} classes, docstrings "
+                         f"{py['docstring_ratio']:.0%}; imports: {', '.join(list(py['imports'])[:10])}")
+        for name, s in (r.get("structure") or {}).items():
+            counts = ", ".join(f"{v} {k}" for k, v in s["defined_kinds"].items())
+            lines.append(f"  structure {name}: {counts or 'nothing defined'}"
+                         + (f" ({s['unread']} of {s['files']} files unread)" if s["unread"] else ""))
+        if r["names"]:
+            lines.append("  names: " + ", ".join(list(r["names"])[:15]))
+        if r["url_count"]:
+            lines.append(f"  links in code: {r['url_count']}")
+        return "\n".join(lines)
+
+    from gitrecon.code.store import describe, save_analysis
+
+    for result in results:
+        describe(result)
+    out.listing(results, text=text, data=lambda r: r, url=lambda r: None,
+                summary=f"-- {len(results)} repositories analysed" if len(results) > 1 else None)
+    if not args.no_save:
+        from gitrecon.hub.huggingface import default_local_dir
+
+        private: set[str] = set()
+        if not args.map_priv_repos:
+            from gitrecon.code.store import not_public
+            from gitrecon.sources.github_api import GitHubClient
+
+            private = not_public(results, GitHubClient(config))
+        saved = save_analysis(results, config.raw_dir, default_local_dir(config), private=private)
+        out.note(f"saved: {saved['buffered']} to the raw buffer ({config.raw_dir / 'analysis'}), "
+                 f"{len(saved['mapped'])} new or changed in the map"
+                 + (f"; kept out of the map (no origin, private or not shown public - --map-priv-repos "
+                    f"writes them too): {', '.join(saved['unmapped'])}" if saved["unmapped"] else ""))
+    if out.urls:
+        for url in dict.fromkeys(u for r in results for u in r["urls"]):
+            print(url)
+    return 0
+
+
+def cmd_commits(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.code.store import origin
+    from gitrecon.humanish import commit_labels, read_commits, summarize_commits
+
+    path = Path(args.path).expanduser().resolve()
+    commits = read_commits(path, args.max_commits or None)
+    source = origin(path)
+    target = f"repo:{source['owner']}/{source['name']}".lower() if source else f"repo:{path.name}"
+    summary = summarize_commits(commits)
+    labels = commit_labels(target, commits)
+
+    def text() -> str:
+        counts = lambda d: ", ".join(f"{k} {v}" for k, v in d.items()) or "-"  # noqa: E731
+        lines = [f"{path.name}: {summary['commits']} commits ({counts(summary['forms'])})",
+                 f"  conventional form: {summary['conventional_share']:.0%} of {summary['own']} own commits",
+                 f"  types:  {counts(summary['types'])}",
+                 f"  work:   {counts(summary['work'])}",
+                 f"  scopes: {counts(dict(list(summary['scopes'].items())[:8]))}",
+                 f"  breaking: {summary['breaking']}"]
+        if summary["unknown_types"]:
+            lines.append(f"  types without a meaning in resources/humanish.yml: {', '.join(summary['unknown_types'])}")
+        lines += [f"  {label}" for label in labels] or ["  no labels"]
+        return "\n".join(lines)
+
+    out.result({"repository": path.name, "target": target, "summary": summary,
+                "labels": [label.to_json() for label in labels],
+                "commits": [c.to_json() for c in commits] if args.list else None}, text=text)
+    if args.list and not out.machine:
+        for c in commits:
+            mark = "!" if c.breaking else " "
+            print(f"  {(c.sha or '')[:7]} {c.form:<12} {(c.type or '-'):<9}{mark} {c.subject[:70]}")
+    return 0
+
+
+def cmd_imports(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.code.imports import folder_edges, import_graph, imports_mermaid
+
+    graph = import_graph(Path(args.path).expanduser())
+    mermaid = imports_mermaid(graph, level=args.level, depth=args.depth, max_nodes=args.max_nodes)
+
+    def summary() -> str:
+        lines = [f"{graph['name']}: {len(graph['files'])} files read "
+                 f"({', '.join(f'{n} {name}' for name, n in graph['languages'].items()) or 'none'}), "
+                 f"{len(graph['edges'])} imports between them",
+                 "  most used:"]
+        lines += [f"    {m['used_by']:>4}  {m['file']}" for m in graph["most_used"][: args.limit]] or ["    -"]
+        lines.append("  uses most:")
+        lines += [f"    {m['uses']:>4}  {m['file']}" for m in graph["uses_most"][: args.limit]] or ["    -"]
+        between = sorted(folder_edges(graph, args.depth).items(), key=lambda kv: (-kv[1], kv[0]))
+        if between:
+            lines.append(f"  between folders ({args.depth} levels deep):")
+            lines += [f"    {n:>4}  {source} -> {target}" for (source, target), n in between[: args.limit]]
+        lines.append(f"  cycles: {len(graph['cycles'])}")
+        lines += [f"    {' <-> '.join(group[:6])}{' ...' if len(group) > 6 else ''}" for group in graph["cycles"][:5]]
+        lines.append(f"  unconnected files: {len(graph['unconnected'])}")
+        outside = list(graph["external"].items())[: args.limit]
+        lines.append("  external: " + (", ".join(f"{name} ({n})" for name, n in outside) or "-"))
+        return "\n".join(lines)
+
+    out.result(graph | {"mermaid": mermaid}, text=mermaid.rstrip("\n") if args.format == "mermaid" else summary)
+    if args.save:
+        folder = config.data_dir / "imports"
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{graph['name']}-{args.level}.md"
+        target.write_text(f"# Imports inside {graph['name']} ({args.level} level)\n\n```mermaid\n{mermaid}```\n",
+                          encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
+def cmd_score(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.mapping import score
+    from gitrecon.mapping.gitgraph import assign_lanes, branch_tips, read_history
+
+    path = Path(args.path).expanduser().resolve()
+    commits = read_history(path, args.max_commits or None)
+    lanes = assign_lanes(commits, branch_tips(path))
+    notes = score.score_notes(commits)
+    folder = config.data_dir / "scores"
+    if args.format == "midi":
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.mid"
+        target.write_bytes(score.to_midi(notes, tempo=args.tempo))
+        out.result({"repository": path.name, "notes": len(notes), "file": str(target)},
+                   text=f"{path.name}: {len(notes)} notes on {min(len(lanes), 6)} strings -> {target}")
+        return 0
+    text = score.to_tab(notes) if args.format == "tab" else score.to_abc(notes, title=path.name)
+    out.result({"repository": path.name, "format": args.format, "lanes": lanes, "score": text,
+                "notes": [{"sha": n.sha, "lane": n.lane, "string": n.string, "frets": n.frets, "eighths": n.eighths,
+                           "pitches": n.pitches, "tag": n.tag} for n in notes]}, text=text.rstrip("\n"))
+    if args.save:
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.{'abc' if args.format == 'abc' else 'tab.txt'}"
+        target.write_text(text, encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
+def cmd_gitgraph(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from collections import Counter
+    from pathlib import Path
+
+    from gitrecon.mapping import gitgraph
+
+    path = Path(args.path).expanduser().resolve()
+    commits = gitgraph.read_history(path, args.max_commits or None)
+    lanes = gitgraph.assign_lanes(commits, gitgraph.branch_tips(path))
+    diagram = gitgraph.git_graph(path, max_commits=args.max_commits or None, labels=args.labels)
+    per_lane = Counter(c.lane for c in commits)
+
+    def summary() -> str:
+        merges = sum(len(c.parents) > 1 for c in commits)
+        lines = [f"{path.name}: {len(commits)} commits, {merges} merges, {len(lanes)} lanes", ""]
+        lines += [f"  {per_lane[lane]:>5}  {lane}" for lane in lanes]
+        tagged = [f"{t} ({c.short})" for c in commits for t in c.tags]
+        if tagged:
+            lines += ["", "tags: " + ", ".join(tagged[-12:])]
+        return "\n".join(lines)
+
+    if args.save:
+        folder = config.data_dir / "gitgraphs"
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.md"
+        target.write_text(f"# Git graph of {path.name}\n\n```mermaid\n{diagram}```\n", encoding="utf-8")
+        out.note(f"saved {target}")
+    data = {"repository": str(path), "lanes": {lane: per_lane[lane] for lane in lanes},
+            "commits": [{"sha": c.sha, "parents": c.parents, "lane": c.lane, "time": c.time, "author": c.author,
+                         "subject": c.subject, "tags": c.tags} for c in commits]}
+    out.result(data, text=summary if args.format == "summary" else diagram.rstrip("\n"))
+    return 0
+
+
 def cmd_label(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.analysis import Labeler
 
@@ -149,6 +351,58 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--progress", dest="verbose_progress", action="store_true", help="say what is being collected")
     add_output_flags(p)  # --json: nodes, edges and the owner overview; --urls: every node's page
     p.set_defaults(func=cmd_network)
+
+    p = sub.add_parser("analyze", help="what cloned repositories are made of: languages, structure, frameworks")
+    p.add_argument("path", nargs="*", default=["."],
+                   help="repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default: .)")
+    p.add_argument("--limit", type=int, default=8, help="languages listed per repository")
+    p.add_argument("--deep", action="store_true",
+                   help="CaptorLex step 1: also functions, methods, classes per language (tree-sitter; code extra)")
+    p.add_argument("--map-priv-repos", action="store_true",
+                   help="write private repositories to the map dataset too (by default only public ones; "
+                        "the map gets published)")
+    p.add_argument("--no-save", action="store_true",
+                   help="only print: by default results go to the raw buffer and the map dataset")
+    add_output_flags(p)  # --json: the full analysis; --urls: links found in code and comments
+    p.set_defaults(func=cmd_analyze)
+
+    p = sub.add_parser("commits", help="a cloned repository's commit messages read as records: types, scopes, labels")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--max-commits", type=int, default=0, help="only the newest N (default: all)")
+    p.add_argument("--list", action="store_true", help="also every commit with its form and type")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_commits)
+
+    p = sub.add_parser("imports", help="which file uses which inside a cloned repository (CaptorLex step 2)")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["summary", "mermaid"], default="summary")
+    p.add_argument("--level", choices=["folder", "file"], default="folder", help="mermaid: folders (default) or files")
+    p.add_argument("--depth", type=int, default=3, help="folder level: how many path parts make a folder")
+    p.add_argument("--max-nodes", type=int, default=80, help="file level: draw the N most connected files")
+    p.add_argument("--limit", type=int, default=8, help="summary: rows per list")
+    p.add_argument("--save", action="store_true", help="write the diagram to data/imports/<repository>-<level>.md")
+    add_output_flags(p, urls=False)  # --json: files, edges, most_used, cycles, external, mermaid
+    p.set_defaults(func=cmd_imports)
+
+    p = sub.add_parser("score", help="a cloned repository's history as music: guitar tab, ABC notation or MIDI")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["tab", "abc", "midi"], default="tab",
+                   help="tab (default), abc, or midi - written to data/scores/<repository>.mid")
+    p.add_argument("--max-commits", type=int, default=64, help="play the newest N commits (0: all)")
+    p.add_argument("--tempo", type=int, default=96, help="midi: quarter notes per minute")
+    p.add_argument("--save", action="store_true", help="tab, abc: also write data/scores/<repository>.abc | .tab.txt")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_score)
+
+    p = sub.add_parser("gitgraph", help="a cloned repository's history across all branches, as a Mermaid gitGraph")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["summary", "mermaid"], default="summary",
+                   help="summary of lanes (default) or the Mermaid script")
+    p.add_argument("--max-commits", type=int, default=150, help="draw the newest N commits (0: all)")
+    p.add_argument("--labels", action="store_true", help="show commit subjects next to the commits")
+    p.add_argument("--save", action="store_true", help="write the diagram to data/gitgraphs/<repository>.md")
+    add_output_flags(p, urls=False)  # --json: commits with their lanes
+    p.set_defaults(func=cmd_gitgraph)
 
     p = sub.add_parser("label", help="conclude labels from the raw buffer")
     p.add_argument("--source")

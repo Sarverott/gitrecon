@@ -1,0 +1,22 @@
+// The header (first line) of a commit message, and one trailer line of its body.
+// Controlled language: Conventional Commits (type(scope)!: subject), git's own merge and
+// revert sentences; anything else is `plain`. Earley picks the highest-priority reading.
+header: conventional | merge | revert | plain
+
+conventional.4: TYPE ("(" SCOPE ")")? BREAKING? ":" _SP+ SUBJECT
+merge.3: "Merge " MERGE_KIND _SP+ SUBJECT
+revert.3: "Revert " SUBJECT
+plain.1: SUBJECT
+
+// "BREAKING CHANGE: text", "Co-Authored-By: name <mail>", "Refs #12"
+trailer: (BREAKING_KEY | TRAILER_KEY) (":" _SP+ | _SP+ "#") TRAILER_VALUE
+
+TYPE: /[A-Za-z][A-Za-z0-9_-]*/
+SCOPE: /[^()\r\n]+/
+BREAKING: "!"
+MERGE_KIND: "pull request" | "remote-tracking branch" | "branch" | "tag" | "commit"
+SUBJECT: /[^\r\n]+/
+BREAKING_KEY: /BREAKING[ -]CHANGE/
+TRAILER_KEY: /[A-Za-z][A-Za-z0-9]*(-[A-Za-z0-9]+)*/
+TRAILER_VALUE: /[^\r\n]+/
+_SP: " "

@@ -39,6 +39,22 @@ class Labeler:
             elif isinstance(item, Gist):
                 self.add_gist(item)
 
+    def _commit_labels(self) -> list[Label]:
+        """What the commit messages of pushes say about a repository (``gitrecon.humanish``).
+
+        Only where the event carries them: GH Archive hours and older Events API answers do,
+        current Events API pushes do not.
+        """
+        from gitrecon.humanish import commit_labels, parse_commit
+
+        labels: list[Label] = []
+        for target, events in self.by_repo.items():
+            commits = [parse_commit(c.get("message") or "", sha=c.get("sha"))
+                       for e in events if e.type == "PushEvent" for c in (e.payload.get("commits") or [])]
+            if commits:
+                labels.extend(commit_labels(target, commits))
+        return labels
+
     def run(self) -> list[Label]:
         labels: list[Label] = []
         for groups, rule_set in (
@@ -50,5 +66,6 @@ class Labeler:
                 for rule in rule_set:
                     if label := rule(target, items, self.thresholds):
                         labels.append(label)
+        labels.extend(self._commit_labels())
         labels.sort(key=lambda label: (-label.confidence, label.name, label.target))
         return labels

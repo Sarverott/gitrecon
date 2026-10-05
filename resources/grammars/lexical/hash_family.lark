@@ -1,0 +1,12 @@
+// Lexical patterns of languages with # comments: shell, Ruby, Perl, R, YAML, TOML, Dockerfile,
+// Makefile, PowerShell, Elixir, Nim and similar.
+start: (COMMENT | STRING | NUMBER | NAME | OTHER)*
+
+COMMENT.4: /#[^\n]*/
+STRING.3: /"(\\.|[^"\\])*"/
+        | /'[^'\n]*'/
+NUMBER.2: /0[xX][0-9a-fA-F]+|\d[\d_]*(\.\d+)?/
+NAME.2: /[A-Za-z_][A-Za-z0-9_]*/
+OTHER.0: /[^\s]/
+
+%ignore /\s+/

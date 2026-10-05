@@ -1,0 +1,53 @@
+# How a file names the other files it uses - CaptorLex step 2, inside one repository.
+#
+# Python is not here: it is read exactly, through `ast` (gitrecon.code.imports).
+# patterns:   regular expressions (multiline); group 1 is the target as written
+# resolve:    how a target becomes a file of the repository
+#             relative  - only ./x and ../x are files (from the importing file); the rest is external
+#             path      - a path from the importing file's folder, else from the repository root
+#             include   - like path, else any file whose path ends with the target
+# extensions: tried when the target has none; index: tried when the target is a folder
+# psr4:       also read `use A\B\C;` through composer.json's autoload map (PHP)
+
+languages:
+  JavaScript: &ecmascript
+    patterns:
+      - '^[ \t]*import\s[^''"`;]*?[''"]([^''"\n]+)[''"]'
+      - '^[ \t]*export\s[^''"`;]*?\sfrom\s+[''"]([^''"\n]+)[''"]'
+      - '\brequire\(\s*[''"]([^''"\n]+)[''"]\s*\)'
+      - '\bimport\(\s*[''"]([^''"\n]+)[''"]\s*\)'
+    resolve: relative
+    extensions: [.js, .mjs, .cjs, .jsx, .ts, .tsx, .mts, .cts, .json, .vue, .svelte]
+    index: [index.js, index.ts, index.tsx, index.jsx, index.mjs]
+  TypeScript: *ecmascript
+  Vue: *ecmascript
+  Svelte: *ecmascript
+  Astro: *ecmascript
+  C: &c_include
+    patterns:
+      - '^[ \t]*#[ \t]*include[ \t]*"([^"\n]+)"'
+    external:
+      - '^[ \t]*#[ \t]*include[ \t]*<([^>\n]+)>'
+    resolve: include
+  C++: *c_include
+  PHP:
+    patterns:
+      - '^[ \t]*(?:require|include)(?:_once)?[ \t(]*(?:__DIR__[ \t]*\.[ \t]*)?[''"]/?([^''"\n]+)[''"]'
+    resolve: path
+    psr4: true
+  Ruby:
+    patterns:
+      - '^[ \t]*require_relative[ \t(]+[''"]([^''"\n]+)[''"]'
+    external:
+      - '^[ \t]*require[ \t(]+[''"]([^''"\n]+)[''"]'
+    resolve: path
+    extensions: [.rb]
+  Shell:
+    patterns:
+      - '^[ \t]*(?:source|\.)[ \t]+"?(?:\$\([^)\n]*\)/|\$\{?\w+\}?/)?([\w./-]+\.(?:sh|bash|zsh))"?'
+    resolve: include
+  CSS:
+    patterns:
+      - '^[ \t]*@(?:import|use|forward)[ \t]+(?:url\()?[''"]([^''"\n]+)[''"]'
+    resolve: path
+    extensions: [.css, .scss, .sass, .less]

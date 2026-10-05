@@ -1,0 +1,13 @@
+// Lexical patterns of languages with -- comments: SQL, Lua, Haskell, Ada, Elm, VHDL.
+start: (COMMENT | STRING | NUMBER | NAME | OTHER)*
+
+COMMENT.4: /--[^\n]*/
+         | /\/\*[\s\S]*?\*\//
+         | /\{-[\s\S]*?-\}/
+STRING.3: /"(\\.|[^"\\\n])*"/
+        | /'(''|[^'\n])*'/
+NUMBER.2: /\d[\d_]*(\.\d+)?([eE][+-]?\d+)?/
+NAME.2: /[A-Za-z_][A-Za-z0-9_]*/
+OTHER.0: /[^\s]/
+
+%ignore /\s+/

@@ -43,7 +43,7 @@ tasks:
   install:
     desc: Install uv dependencies and the git hooks (husky)
     cmds:
-      - uv sync
+      - uv sync --all-extras
       - npm install
 
   test:
@@ -62,6 +62,16 @@ tasks:
     desc: Copy shared info from metadata.json into package.json, pyproject.toml and lockfiles
     cmds:
       - task: scripts:sync
+
+  merge:check:
+    desc: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
+    cmds:
+      - task: scripts:merge:check
+
+  merge:remote:
+    desc: Bring the remote version of the branch in (after "push rejected") - fast-forward or merge; never pushes
+    cmds:
+      - task: scripts:merge:remote
 
   commit:
     desc: Commit with commitizen (conventional message prompt); routines from .husky/bos.config.json apply

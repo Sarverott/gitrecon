@@ -170,3 +170,16 @@ def test_clone_org_repos_without_path_uses_the_forge(tmp_path, monkeypatch, orig
     results = repos.clone_org_repos("rattish", client=client)
     assert results[0]["status"] == "cloned"
     assert results[0]["path"] == str(tmp_path / "forge" / "rattish" / "tool")
+
+
+def test_clone_analyses_by_default_and_can_skip(tmp_path, monkeypatch, capsys, origin):
+    monkeypatch.setenv("GITRECON_DATA", str(tmp_path / "d"))
+    listed = repo("rattish/tool") | {"clone_url": f"file://{origin}"}
+    client, _ = client_with({f"{API}/orgs/rattish/repos": [FakeResponse([listed]), FakeResponse([listed])]})
+    monkeypatch.setattr("gitrecon.cli.collect._client", lambda config: client)
+    assert main(["org-clone", "rattish", str(tmp_path / "plain"), "--no-analysis"]) == 0
+    assert "analysed" not in capsys.readouterr().out and not (tmp_path / "d").exists()
+    assert main(["org-clone", "rattish", str(tmp_path / "read")]) == 0
+    out = capsys.readouterr().out
+    assert "cloned   rattish/tool  [-, 1 files]" in out and "analysed 1" in out
+    assert list((tmp_path / "d" / "raw" / "analysis").rglob("*.json.gz"))
