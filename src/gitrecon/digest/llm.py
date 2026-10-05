@@ -2,13 +2,11 @@
 
 Both speak plain HTTP, so they need no SDKs and are easy to fake in tests.
 
-The Ollama side is decided: ``gitrecon.llm.Ollama`` is the interface (structured answers,
-embeddings, model management); this plain-HTTP client stays for the digest's bulk
-summarizing and finds the server the same way.
-
-TODO(llm-interfaces): the OpenAI-compatible enterprise endpoints are still open. Expected:
-one OpenAI-compatible client configured per provider (base URL, key, model) replacing the
-xAI-only client.
+TODO(llm-interfaces): on hold. A fuller Ollama interface was tried and parked
+(``gitrecon/llm/``, commented out); the OpenAI-compatible enterprise endpoints are still
+open. Expected one day: one OpenAI-compatible client configured per provider (base URL,
+key, model) replacing the xAI-only client, Ollama kept for local bulk summarizing. Until
+then digest/posts work as they are, untuned.
 """
 
 from __future__ import annotations
@@ -31,9 +29,8 @@ class ChatClient(Protocol):
 
 
 def _ollama_host() -> str:
-    from gitrecon.llm.ollama import find_host
-
-    return find_host()
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    return host if host.startswith("http") else f"http://{host}"
 
 
 @dataclass

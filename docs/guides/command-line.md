@@ -61,8 +61,7 @@ A folder already there under the same name in another letter case is reused.
 | `gitrecon relations REPOSITORY [--offline]` | what one repository holds on to: fork parent, then dependencies by origin |
 | `gitrecon contributors [PATH] [--format list\|authors\|pie] [--ignorelist [FILE]] [--save]` | who made a repository ([[contributor]]) |
 | `gitrecon score [PATH] [--format tab\|abc\|midi] [--contributors-band-mode] [--ignorelist [FILE]] [--save]` | history as guitar tablature, ABC notation or MIDI ([[score]]) |
-| `gitrecon llm models\|pull MODEL\|ask WORDS...` | the local model server ([[llm]]) |
-| `gitrecon commit-files [PATH] [--model M] [--no-model] [--limit N] [--apply]` | a commit per changed file, messages by a local model ([[commit-writer]]) |
+| `gitrecon commit-files [PATH] [--handler NAME] [--limit N] [--apply]` | a commit per changed file, messages by a handler ([[commit-writer]]) |
 | `gitrecon commits [PATH] [--list] [--max-commits N]` | commit messages as records: forms, types, kinds of work, labels ([[humanish]]) |
 | `gitrecon text requirements URL\|FILE [--raw]` | sentences with MUST / SHOULD / MAY and their level |
 | `gitrecon translate text\|languages\|install` | offline [[translation]] (Argos) |
