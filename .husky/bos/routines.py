@@ -5,12 +5,15 @@ Commands (run from the repository root):
   push       push the branch after a commit       flag: auto_push_after_commit
   explain    print which routines are on
 
+BOS_SKIP_ROUTINES=add-all,push in the environment switches routines off for one command.
+
 Git refuses to commit before any hook runs when nothing is staged, so add-all must run
 before the commit command (task commit does that). The pre-commit hook runs it as well,
 which picks up the rest when only some changes were staged.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -24,6 +27,11 @@ ROUTINES = {
 
 # canon is only reached through the loop's pull requests, never pushed to directly
 PROTECTED_BRANCHES = {"master"}
+
+
+def skipped(name):
+    """BOS_SKIP_ROUTINES=add-all,push switches routines off for one command (a series of per-file commits)."""
+    return name in {part.strip() for part in os.environ.get("BOS_SKIP_ROUTINES", "").split(",")}
 
 
 def enabled(flag):
@@ -45,14 +53,14 @@ def operation_in_progress():
 
 
 def routine_add_all():
-    if not enabled(ROUTINES["add-all"]):
+    if not enabled(ROUTINES["add-all"]) or skipped("add-all"):
         return
     git("add", "-A")
     print("routine add-all: staged all changes")
 
 
 def routine_push():
-    if not enabled(ROUTINES["push"]):
+    if not enabled(ROUTINES["push"]) or skipped("push"):
         return
     branch = git("branch", "--show-current").stdout.strip()
     if not branch:

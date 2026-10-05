@@ -21,7 +21,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write  # the AUTHORS refresh on releasing commits and pushes; everything else only reads
   pull-requests: write
   actions: write
 
@@ -36,6 +36,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+          fetch-depth: 0  # the whole history: AUTHORS is read from it
+
+      # the middle of a release: testing was merged into releasing, the PR to master is not open yet
+      - name: Set up uv
+        if: (inputs.branch || github.ref_name) == 'releasing'
+        uses: astral-sh/setup-uv@v10.2.0  # no moving major tags since v8
+
+      - name: Refresh AUTHORS
+        if: (inputs.branch || github.ref_name) == 'releasing'
+        run: scripts/delegated/workflow-gh/release/authors.sh releasing
 
       - name: Open PR and start its checks
         env:

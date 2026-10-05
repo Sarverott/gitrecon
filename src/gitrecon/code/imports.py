@@ -163,10 +163,13 @@ def _php_uses(text: str, psr4: dict[str, str], files: set[str]) -> tuple[set[str
 # --- the graph --------------------------------------------------------------------------------
 
 
-def import_graph(path: str | Path) -> dict[str, Any]:
-    """``{"files": [...], "edges": [[from, to]], "external": {name: files using it}, ...}`` with a summary."""
+def import_graph(path: str | Path, untracked: bool = False) -> dict[str, Any]:
+    """``{"files": [...], "edges": [[from, to]], "external": {name: files using it}, ...}`` with a summary.
+
+    ``untracked=True`` reads new, not yet tracked files too (see ``repo_files``).
+    """
     root = Path(path).expanduser().resolve()
-    listed = {p.relative_to(root).as_posix(): p for p in repo_files(root)}
+    listed = {p.relative_to(root).as_posix(): p for p in dict.fromkeys(repo_files(root, untracked=untracked))}
     files = set(listed)
     by_suffix: dict[str, list[str]] = {}
     for file in files:

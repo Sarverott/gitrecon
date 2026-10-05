@@ -100,6 +100,44 @@ def repos_mermaid(graph: ActivityGraph, max_nodes: int = 150, forks_only: bool =
     return "\n".join([*lines, CLASSES])
 
 
+def owner_mindmap(graph: ActivityGraph, user_key: str, max_repos: int = 10, legend: bool = True) -> str:
+    """A Mermaid mindmap of one owner: the user in the middle, organizations and repositories around.
+
+    Shapes are the legend: a circle is the user, a square an organization, a rounded box a
+    repository, a hexagon something outside (the repository a fork comes from). Each owner
+    shows its ``max_repos`` most starred repositories; the rest is one "+N more" leaf.
+    """
+    owned: dict[str, list[str]] = {}
+    for edge in graph.edges:
+        if edge.relation == OWNED_BY and graph.nodes[edge.source].raw:  # listed repositories, not upstream stubs
+            owned.setdefault(edge.target, []).append(edge.source)
+    parents = {e.source: e.target for e in graph.edges if e.relation == FORK_OF}
+    orgs = sorted(e.target for e in graph.edges if e.relation == "member_of" and e.source == user_key)
+    counter = iter(range(1, 1_000_000))
+    text = lambda value: '"' + str(value).replace('"', "'") + '"'  # noqa: E731
+    lines = ["mindmap", f"  root(({_name(user_key, graph)}))"]
+
+    def repositories(owner_key: str, indent: str) -> None:
+        repos = sorted(owned.get(owner_key, []), key=lambda k: (-(graph.nodes[k].stargazers_count or 0), k))
+        for key in repos[:max_repos]:
+            node = graph.nodes[key]
+            stars = f" ★{node.stargazers_count}" if node.stargazers_count else ""
+            lines.append(f"{indent}r{next(counter)}({text(node.name + stars)})")
+            if key in parents:
+                lines.append(f"{indent}  u{next(counter)}{{{{{text(_name(parents[key], graph))}}}}}")
+        if len(repos) > max_repos:
+            lines.append(f"{indent}m{next(counter)}({text(f'+{len(repos) - max_repos} more')})")
+
+    repositories(user_key, "    ")
+    for org in orgs:
+        lines.append(f"    o{next(counter)}[{text(_name(org, graph))}]")
+        repositories(org, "      ")
+    if legend:
+        lines += ["    legend)legend(", '      lu(("user"))', '      lo["organization"]', '      lr("repository")',
+                  '      lx{{"forked from"}}']
+    return "\n".join(lines) + "\n"
+
+
 def to_dot(graph: ActivityGraph) -> str:
     """Graphviz DOT of the whole graph (for Gephi, ``dot -Tsvg`` ...)."""
     lines = ["digraph gitrecon {", "  rankdir=LR;", '  node [shape=box, fontname="sans-serif"];']

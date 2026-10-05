@@ -106,6 +106,73 @@ def cmd_text(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_llm(args: argparse.Namespace, config: Config, out: Output) -> int:
+    import sys
+
+    from gitrecon.llm import Ollama
+
+    llm = Ollama(model=args.model) if args.model else Ollama()
+    try:
+        match args.action:
+            case "models":
+                out.listing(llm.models(), text=lambda name: name, data=lambda name: name, url=lambda name: None,
+                            summary=lambda found: f"-- {len(found)} models at {llm.host}"
+                                                  + ("" if found else "; get one: gitrecon llm pull deepseek-r1:1.5b"))
+            case "pull":
+                if len(args.words) != 1:
+                    out.note("usage: gitrecon llm pull MODEL   (e.g. deepseek-r1:1.5b)")
+                    return 2
+                out.note(f"pulling {args.words[0]} into {llm.host} (models are large: this can take minutes)")
+                out.result({"model": args.words[0], "status": llm.pull(args.words[0])},
+                           text=lambda: f"{args.words[0]}: ready")
+            case "ask":
+                prompt = sys.stdin.read() if args.words in ([], ["-"]) else " ".join(args.words)
+                answer = llm.chat(prompt)
+                out.result({"host": llm.host, "model": llm.model, "prompt": prompt, "answer": answer}, text=answer)
+    except RuntimeError as error:
+        out.note(str(error))
+        return 1
+    return 0
+
+
+def cmd_commit_files(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.llm import Ollama, commit_writer
+
+    repo = Path(args.path).expanduser().resolve()
+    llm = None
+    if not args.no_model:
+        llm = Ollama(model=args.model) if args.model else Ollama()
+        try:
+            out.note(f"model: {llm.pick_model()} at {llm.host}")
+        except RuntimeError as error:
+            out.note(f"{error}\n(--no-model writes plain messages from the file paths instead)")
+            return 1
+    plan = commit_writer.plan_commits(repo, llm, limit=args.limit, progress=out.note if not out.machine else None)
+    if not plan:
+        out.note("nothing changed: no commits to make")
+        return 0
+    if args.apply:
+        plan = commit_writer.apply_plan(repo, plan, progress=out.note if not out.machine else None)
+
+    def text(step: dict) -> str:
+        head, _, rest = step["message"].partition("\n\n")
+        state = "" if "committed" not in step else (f"  [{step['sha']}]" if step["committed"] else "  [FAILED]")
+        lines = [f"{step['status']:<9} {step['path']}{state}", f"    {head}"]
+        lines += [f"    | {line}" for line in rest.splitlines() if line]
+        if step["by"] == "fallback" and llm is not None:
+            lines.append("    (the model's answer was not usable: message written from the path)")
+        if step.get("error"):
+            lines.append(f"    error: {step['error']}")
+        return "\n".join(lines)
+
+    failed = any(step.get("committed") is False for step in plan)
+    out.listing(plan, text=text, data=lambda step: step, url=lambda step: None,
+                summary=(f"-- {sum(bool(s.get('committed')) for s in plan)} of {len(plan)} committed"
+                         + ("; stopped at the first failure, the rest is untouched" if failed else "; not pushed: git push")
+                         if args.apply else f"-- a plan of {len(plan)} commits; nothing was committed (--apply does it)"))
+    return 1 if failed else 0
+
+
 def cmd_translate(args: argparse.Namespace, config: Config, out: Output) -> int:
     import sys
 
@@ -177,3 +244,21 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--available", action="store_true", help="languages: what the Argos index offers, not what is installed")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_translate, rest="words")
+
+    p = sub.add_parser("llm", help="the local model server (Ollama): models, pull, ask")
+    p.add_argument("action", choices=["models", "pull", "ask"])
+    p.add_argument("words", nargs="*", help="pull: the model name; ask: the prompt (or - for stdin)")
+    p.add_argument("--model", help="ask: the model (default: $OLLAMA_MODEL, else the server's first)")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_llm, rest="words")
+
+    p = sub.add_parser("commit-files", help="a commit per changed file, each message written by a local model "
+                                            "(a plan by default; --apply commits)")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--model", help="the Ollama model (default: $OLLAMA_MODEL, else the server's first)")
+    p.add_argument("--no-model", action="store_true", help="plain messages from the file paths, no model")
+    p.add_argument("--limit", type=int, help="only the first N files of the order")
+    p.add_argument("--apply", action="store_true",
+                   help="make the commits (hooks run for each; nothing is staged besides the file; no push)")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_commit_files)

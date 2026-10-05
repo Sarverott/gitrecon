@@ -1447,7 +1447,7 @@ wheels = [
 
 [[package]]
 name = "gitrecon"
-version = "0.6.1"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -1475,6 +1475,7 @@ all = [
     { name = "openai" },
     { name = "paramiko" },
     { name = "scapy" },
+    { name = "sympy" },
     { name = "tree-sitter" },
     { name = "tree-sitter-language-pack" },
 ]
@@ -1492,6 +1493,9 @@ llm = [
     { name = "nanobot" },
     { name = "ollama" },
     { name = "openai" },
+]
+math = [
+    { name = "sympy" },
 ]
 net = [
     { name = "paramiko" },
@@ -1548,7 +1552,7 @@ requires-dist = [
     { name = "chromadb", marker = "extra == 'llm'", specifier = ">=1.5.5" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "docker", specifier = ">=7.1.0" },
-    { name = "gitrecon", extras = ["hub", "llm", "net", "code", "translate"], marker = "extra == 'all'" },
+    { name = "gitrecon", extras = ["hub", "llm", "net", "code", "translate", "math"], marker = "extra == 'all'" },
     { name = "huggingface-hub", marker = "extra == 'hub'", specifier = ">=1.7.2" },
     { name = "langchain", marker = "extra == 'llm'", specifier = ">=1.4.3" },
     { name = "lark", specifier = ">=1.3.1" },
@@ -1565,10 +1569,11 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.5" },
     { name = "rich", specifier = ">=13.9.4" },
     { name = "scapy", marker = "extra == 'net'", specifier = ">=2.8.0" },
+    { name = "sympy", marker = "extra == 'math'", specifier = ">=1.13" },
     { name = "tree-sitter", marker = "extra == 'code'", specifier = ">=0.25" },
     { name = "tree-sitter-language-pack", marker = "extra == 'code'", specifier = ">=0.9" },
 ]
-provides-extras = ["hub", "llm", "net", "code", "translate", "all"]
+provides-extras = ["hub", "llm", "net", "code", "translate", "math", "all"]
 
 [package.metadata.requires-dev]
 delivery = [

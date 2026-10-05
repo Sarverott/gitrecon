@@ -58,8 +58,13 @@ def _length(seconds: int) -> int:
     return 1 if seconds < HOUR else 2 if seconds < DAY else 4 if seconds < WEEK else 8
 
 
-def score_notes(commits: list[Commit]) -> list[Note]:
-    """One note per commit, in the order given (parents first, as ``read_history`` returns them)."""
+def score_notes(commits: list[Commit], ignore: list[str] | None = None) -> list[Note]:
+    """One note per commit, in the order given (parents first, as ``read_history`` returns them).
+
+    ``ignore``: ignorelist patterns (``contributors.read_ignorelist``). A commit of an ignored
+    identity keeps its place in time but is silent, and its author is in no band.
+    """
+    from gitrecon.mapping.contributors import is_ignored
     lanes: list[str] = []
     for commit in commits:
         if commit.lane not in lanes:
@@ -73,7 +78,9 @@ def score_notes(commits: list[Commit]) -> list[Note]:
         gap = commits[index + 1].time - commit.time if index + 1 < len(commits) else DAY
         note = Note(commit.sha, commit.lane, string, {string: fret}, _length(max(gap, 0)),
                     commit.tags[0] if commit.tags else None, commit.author)
-        if commit.subject.startswith("Revert"):
+        if ignore and is_ignored(ignore, commit.author, commit.email):
+            note.frets, note.author, note.tag = {}, "", None
+        elif commit.subject.startswith("Revert"):
             note.frets = {}
         else:
             for parent in commit.parents[1:]:
@@ -90,7 +97,8 @@ def band(notes: list[Note]) -> list[dict]:
     """The contributors as a band, busiest first: ``{"author", "notes", "program", "instrument"}``."""
     counts: dict[str, int] = {}
     for note in notes:
-        counts[note.author] = counts.get(note.author, 0) + 1
+        if note.author:  # silenced by an ignorelist: not in the band
+            counts[note.author] = counts.get(note.author, 0) + 1
     members = []
     for index, (author, count) in enumerate(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))):
         program, instrument = BAND[index % len(BAND)]
@@ -120,10 +128,10 @@ def to_tab(notes: list[Note], width: int = 96, band_mode: bool = False) -> str:
         cell = max(1 + note.eighths, 1 + max((len(str(fret)) for fret in note.frets.values()), default=1))
         column = []
         for string in range(len(STRINGS)):
-            text = str(note.frets[string]) if string in note.frets else ("x" if not note.frets and string == note.string else "")
+            text = str(note.frets[string]) if string in note.frets else ("x" if not note.frets and note.author and string == note.string else "")
             column.append(text.ljust(cell, "-") if text else "-" * cell)
         if band_mode:
-            column.append(marks[note.author].ljust(cell))
+            column.append(marks.get(note.author, " ").ljust(cell))
         if len(current[0]) + cell + 1 > width:
             blocks.append([row + "|" for row in current])
             current = [row for row in rows]
