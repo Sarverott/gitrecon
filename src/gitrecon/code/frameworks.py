@@ -63,8 +63,8 @@ def read_pyproject(path: Path, keys: list[str] | None = None) -> list[str]:
 
 def read_requirements(path: Path, keys: list[str] | None = None) -> list[str]:
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    return [n for line in lines if line.strip() and not line.strip().startswith(("#", "-"))
-            if (n := _requirement(line))]
+    return [n for line in lines if line.strip() and not line.strip().startswith(("#", "-")) and "://" not in line
+            if (n := _requirement(line))]  # a line that is an address names no package (relations reads those)
 
 
 def read_gomod(path: Path, keys: list[str] | None = None) -> list[str]:

@@ -64,3 +64,20 @@ def test_json_lark_parses():
 def test_render_toc():
     toc = render_toc("# Hello\n\n## World\n")
     assert 'href="#hello"' in toc and 'href="#world"' in toc
+
+
+def test_latex_formulas_as_sympy():
+    sympy = pytest.importorskip("sympy")
+    pytest.importorskip("lark")
+    from gitrecon.text.mathtext import formulas_in, read_latex
+
+    assert read_latex(r"\sqrt{x+3}") == sympy.sqrt(sympy.Symbol("x") + 3)
+    area = read_latex(r"\displaystyle \frac{1}{2} \pi r^2\,")
+    assert area == sympy.pi * sympy.Symbol("r") ** 2 / 2 and area.subs("r", 2) == 2 * sympy.pi
+    assert read_latex("a + b = c") == sympy.Eq(sympy.Symbol("a") + sympy.Symbol("b"), sympy.Symbol("c"))
+    assert str(read_latex(r"\int_0^1 x^2 dx")) == "Integral(x**2, (x, 0, 1))"
+    with pytest.raises(ValueError, match="ambiguous"):
+        read_latex(r"\cos(t)+\sin(t)")
+    found = formulas_in(r'A["$$x^2$$"] --> B("$$\overbrace{a+b}^{\text{note}}$$") --> C("$$\pi r^2$$")')
+    assert [(f["expression"], f["symbols"]) for f in found] == [("x**2", ["x"]), (None, []), ("pi*r**2", ["r"])]
+    assert found[1]["why"] == "not mathematics a parser reads"

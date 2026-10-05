@@ -83,6 +83,7 @@ nav:
       - devlog/scrapnote-1791145526438.md
       - devlog/scrapnote-1791156397474.md
       - devlog/scrapnote-1791168729177.md
+      - devlog/scrapnote-1791176132225.md
   - Glossary:
       - glossary/README.md
       - Collecting:
@@ -103,6 +104,7 @@ nav:
           - glossary/network.md
           - glossary/git-graph.md
           - glossary/score.md
+          - glossary/contributor.md
           - glossary/code-analysis.md
           - glossary/peekerlex.md
           - glossary/captorlex.md

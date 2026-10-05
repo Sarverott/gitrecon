@@ -72,6 +72,7 @@ gitrecon commits .                             # commit messages as records and 
 gitrecon imports . --format mermaid            # which file uses which
 gitrecon score .                               # the history as guitar tablature (or --format midi)
 gitrecon relations ~/__WORKSHOP/forge/rattish  # what ties an owner's repositories: submodules, dependencies
+gitrecon contributors . --ignorelist --format pie   # who made it, bots left out, as a Mermaid pie
 gitrecon translate text --from en --to pl "hello"   # offline, after: gitrecon translate install en pl
 
 # look

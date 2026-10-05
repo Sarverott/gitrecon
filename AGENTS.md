@@ -111,6 +111,16 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
   take the remote side and re-lock; version lines: keep the remote one.
 
+## Contributors and the ignorelist
+
+- `gitrecon.mapping.contributors`: people from the git log (mailmap honoured; same address or
+  same name = one person). `--ignorelist [FILE]` (default `resources/ignorelist.txt`) on
+  `contributors` and `score`. Ignorelist patterns use only `*` and `?` - `[bot]` is literal.
+- Mermaid pies come from `contributors.pie()` (contributors, languages, kinds of outward ties).
+- `gitrecon relations REPOSITORY` = outward ties in the user's order of firmness: fork, (local),
+  registry, custom-registry, git, http; stars after them (not built), links last.
+- `gitrecon.text.mathtext` (math extra): LaTeX -> SymPy through SymPy's Lark parser; small on purpose.
+
 ## Humanish and translation
 
 - `gitrecon.humanish`: controlled sentences by grammar (`resources/grammars/humanish/`,

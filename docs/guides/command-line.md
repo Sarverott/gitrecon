@@ -14,6 +14,7 @@ addresses, one per line) - see [[integration]] for the shapes. Example:
 > | --- | --- |
 > | `network USER --save` | `data/networks/<user>-<level>.md` (a Mermaid diagram in markdown) |
 > | `analyze PATH` (unless `--no-save`), `repo-clone` / `org-clone` (unless `--no-analysis`) | `data/raw/analysis/` and the map: `datasets/imperialmap/data-heuristicality/code-analysis/` |
+> | `contributors PATH --save` | `data/contributors/<repository>.AUTHORS`, pie: `<repository>-<by>.md` |
 > | `relations FOLDER --save` | `data/relations/<folder>.md` (a Mermaid diagram in markdown) |
 > | `imports PATH --save` | `data/imports/<repository>-<level>.md` (a Mermaid diagram in markdown) |
 > | `score PATH --format midi`, `score PATH --save` | `data/scores/<repository>.mid`, `.abc`, `.tab.txt` |
@@ -57,7 +58,9 @@ A folder already there under the same name in another letter case is reused.
 | `gitrecon label [--name NAME] [--json\|--urls]` | [[label]]s with confidence and evidence |
 | `gitrecon imports [PATH] [--format mermaid] [--level folder\|file] [--save]` | which file uses which inside a repository: hubs, cycles, libraries ([[captorlex]]) |
 | `gitrecon relations FOLDER [--format mermaid] [--all] [--save]` | ties between an owner's cloned repositories: submodules, then dependencies |
-| `gitrecon score [PATH] [--format tab\|abc\|midi] [--contributors-band-mode] [--save]` | history as guitar tablature, ABC notation or MIDI ([[score]]) |
+| `gitrecon relations REPOSITORY [--offline]` | what one repository holds on to: fork parent, then dependencies by origin |
+| `gitrecon contributors [PATH] [--format list\|authors\|pie] [--ignorelist [FILE]] [--save]` | who made a repository ([[contributor]]) |
+| `gitrecon score [PATH] [--format tab\|abc\|midi] [--contributors-band-mode] [--ignorelist [FILE]] [--save]` | history as guitar tablature, ABC notation or MIDI ([[score]]) |
 | `gitrecon commits [PATH] [--list] [--max-commits N]` | commit messages as records: forms, types, kinds of work, labels ([[humanish]]) |
 | `gitrecon text requirements URL\|FILE [--raw]` | sentences with MUST / SHOULD / MAY and their level |
 | `gitrecon translate text\|languages\|install` | offline [[translation]] (Argos) |

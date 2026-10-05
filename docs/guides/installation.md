@@ -71,6 +71,7 @@ task docker:run -- menu                  # the interactive menu (commands and st
 | `net` | paramiko, scapy | network reconnaissance |
 | `code` | tree-sitter, tree-sitter-language-pack | `gitrecon analyze --deep` (CaptorLex) |
 | `translate` | argostranslate (brings torch, about 5 GB with its CUDA libraries) | `gitrecon translate` |
+| `math` | sympy | `gitrecon.text.mathtext`: formulas in LaTeX as SymPy expressions |
 | `all` | every extra above | |
 
 `task install` runs `uv sync --all-extras`; a lighter install is `uv sync --extra hub`.

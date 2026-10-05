@@ -44,6 +44,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Humanish](humanish.md) | Human text read by grammar: sentences that follow rules become records. |
 | [Translation](translation.md) | Offline translation with Argos Translate, the engine inside LibreTranslate. |
 | [Score](score.md) | A repository's history as music: guitar tablature, ABC notation, a MIDI file. |
+| [Contributor](contributor.md) | Who made a repository, read from its git log. |
 | [Git graph](git-graph.md) | A repository's history across all branches, drawn as a Mermaid `gitGraph`. |
 | [Network](network.md) | Repositories, users and organizations around one user, as a graph of relations. |
 | [Activity graph](activity-graph.md) | Who touches what: entities as nodes, observed relations as edges with evidence. |
