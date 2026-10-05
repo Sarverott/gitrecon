@@ -160,6 +160,135 @@ def owner_relations(folder: str | Path) -> dict[str, Any]:
             "outside_submodules": outside, "untied": sorted(set(entries) - tied)}
 
 
+# --- the third circle: one repository towards the world ----------------------------------------
+
+FORK, LOCAL, REGISTRY, CUSTOM_REGISTRY, GIT, HTTP = "fork", "local", "registry", "custom-registry", "git", "http"
+# the firmest tie first; `local` (a path on disk: file:, link:, workspace:) is a neighbour of the second circle
+OUTWARD_ORDER = [FORK, LOCAL, REGISTRY, CUSTOM_REGISTRY, GIT, HTTP]
+ANY_GIT = re.compile(r"^(?:git\+|git://|git@|github:|gitlab:|bitbucket:)|\.git(?:[#@].*)?$")
+ANY_HTTP = re.compile(r"^https?://")
+
+
+def _direct(value: str) -> str | None:
+    """``local``, ``git`` or ``http`` when a dependency's value is an address rather than a version."""
+    value = value.strip()
+    if value.startswith(("file:", "link:", "workspace:", "portal:")):
+        return LOCAL
+    if ANY_GIT.search(value) or re.match(r"^[\w.-]+/[\w.-]+(#.*)?$", value):  # npm's user/repo shorthand
+        return GIT
+    return HTTP if ANY_HTTP.match(value) else None
+
+
+def custom_registries(root: Path) -> list[dict[str, str]]:
+    """Registries a repository names besides the public defaults: ``{"ecosystem", "url", "scope", "where"}``."""
+    found: list[dict[str, str]] = []
+    npmrc = root / ".npmrc"
+    if npmrc.is_file():
+        for line in npmrc.read_text(encoding="utf-8", errors="replace").splitlines():
+            if (match := re.match(r"^\s*(?:(@[\w.-]+):)?registry\s*=\s*(\S+)", line)):
+                if "registry.npmjs.org" not in match.group(2):
+                    found.append({"ecosystem": "npm", "url": match.group(2), "scope": match.group(1) or "",
+                                  "where": ".npmrc"})
+    pyproject = _toml(root / "pyproject.toml")
+    tool = pyproject.get("tool") or {}
+    for index in (tool.get("uv") or {}).get("index") or []:
+        if isinstance(index, dict) and index.get("url"):
+            found.append({"ecosystem": "pypi", "url": index["url"], "scope": index.get("name", ""), "where": "pyproject.toml"})
+    for source in (tool.get("poetry") or {}).get("source") or []:
+        if isinstance(source, dict) and source.get("url"):
+            found.append({"ecosystem": "pypi", "url": source["url"], "scope": source.get("name", ""), "where": "pyproject.toml"})
+    for requirements in sorted(root.glob("requirements*.txt")):
+        for line in requirements.read_text(encoding="utf-8", errors="replace").splitlines():
+            if (match := re.match(r"^\s*--(?:extra-)?index-url[ =]+(\S+)", line)) and "pypi.org" not in match.group(1):
+                found.append({"ecosystem": "pypi", "url": match.group(1), "scope": "", "where": requirements.name})
+    for repository in _json(root / "composer.json").get("repositories") or []:
+        if isinstance(repository, dict) and repository.get("type") == "composer" and repository.get("url"):
+            found.append({"ecosystem": "composer", "url": repository["url"], "scope": "", "where": "composer.json"})
+    return found
+
+
+def _direct_dependencies(root: Path) -> dict[tuple[str, str], tuple[str, str]]:
+    """``(ecosystem, name) -> (git | http, address)`` for dependencies that bypass a registry."""
+    direct: dict[tuple[str, str], tuple[str, str]] = {}
+    for manifest, ecosystem, keys in (("package.json", "npm", ("dependencies", "devDependencies", "peerDependencies",
+                                                              "optionalDependencies")),
+                                      ("composer.json", "composer", ("require", "require-dev"))):
+        data = _json(root / manifest)
+        for key in keys:
+            for name, value in (data.get(key) or {}).items():
+                if isinstance(value, str) and (kind := _direct(value)):
+                    direct[(ecosystem, name)] = (kind, value)
+    pyproject = _toml(root / "pyproject.toml")
+    specs = list((pyproject.get("project") or {}).get("dependencies") or [])
+    for requirements in sorted(root.glob("requirements*.txt")):
+        specs += requirements.read_text(encoding="utf-8", errors="replace").splitlines()
+    for spec in specs:
+        if not isinstance(spec, str):
+            continue
+        name, _, address = spec.partition("@")
+        address = address.strip().split(";")[0].strip() if "://" in address or address.strip().startswith("git+") else ""
+        if not address and spec.strip().startswith(("git+", "http://", "https://")):
+            address, name = spec.strip().split()[0], spec.strip().rsplit("/", 1)[-1].split("#egg=")[-1].removesuffix(".git")
+        if address and (kind := _direct(address)):
+            direct[("pypi", name.strip().lower().replace("_", "-"))] = (kind, address)
+    for name, source in (((pyproject.get("tool") or {}).get("uv") or {}).get("sources") or {}).items():
+        if isinstance(source, dict) and (source.get("git") or source.get("url")):
+            direct[("pypi", name.lower().replace("_", "-"))] = (GIT if source.get("git") else HTTP,
+                                                                source.get("git") or source["url"])
+    cargo = _toml(root / "Cargo.toml")
+    for section in ("dependencies", "dev-dependencies", "build-dependencies"):
+        for name, spec in (cargo.get(section) or {}).items():
+            if isinstance(spec, dict) and spec.get("git"):
+                direct[("cargo", name)] = (GIT, spec["git"])
+    return direct
+
+
+def outward_ties(repo: str | Path, client: Any = None) -> dict[str, Any]:
+    """What one repository holds on to outside itself, the firmest tie first.
+
+    ``fork`` (its parent - asked from GitHub when ``client`` is given), then dependencies by
+    where they come from: the ecosystem's public ``registry``, a ``custom-registry`` the
+    repository names, straight from ``git``, a file behind ``http``. Stars come after all of
+    these and are not read here.
+    """
+    root = Path(repo).expanduser().resolve()
+    source = origin(root)
+    ties: list[dict[str, str]] = []
+    notes: list[str] = []
+    if source and client is not None and source["platform"].lower() == "github.com":
+        try:
+            data = client.get(f"/repos/{source['owner']}/{source['name']}").data or {}
+            if data.get("fork") and data.get("parent"):
+                ties.append({"kind": FORK, "ecosystem": "github", "name": data["parent"]["full_name"],
+                             "detail": data["parent"].get("html_url", "")})
+        except Exception as error:  # noqa: BLE001 - the parent is an enrichment
+            notes.append(f"fork parent unknown: {error}")
+    elif source is None:
+        notes.append("no origin remote: whether it is a fork cannot be asked")
+    registries = custom_registries(root)
+    scoped = {r["scope"]: r["url"] for r in registries if r["ecosystem"] == "npm" and r["scope"].startswith("@")}
+    whole = {r["ecosystem"]: r["url"] for r in registries if not r["scope"].startswith("@")}
+    direct = _direct_dependencies(root)
+    listed = frameworks.dependencies(root, sorted(p for p in root.iterdir() if p.is_file()))
+    own = published_names(root)
+    for ecosystem, names in listed.items():
+        for name in names:
+            if (ecosystem, name) in direct or own.get(ecosystem) == name:  # itself: extras that name the package
+                continue
+            scope = name.split("/")[0] if name.startswith("@") else ""
+            if scope in scoped and ecosystem == "npm":
+                ties.append({"kind": CUSTOM_REGISTRY, "ecosystem": ecosystem, "name": name, "detail": scoped[scope]})
+            elif ecosystem in whole and ecosystem != "pypi":  # an extra Python index does not say which package uses it
+                ties.append({"kind": CUSTOM_REGISTRY, "ecosystem": ecosystem, "name": name, "detail": whole[ecosystem]})
+            else:
+                ties.append({"kind": REGISTRY, "ecosystem": ecosystem, "name": name, "detail": ""})
+    for (ecosystem, name), (kind, address) in sorted(direct.items()):
+        ties.append({"kind": kind, "ecosystem": ecosystem, "name": name, "detail": address})
+    ties.sort(key=lambda t: (OUTWARD_ORDER.index(t["kind"]), t["ecosystem"], t["name"].lower()))
+    return {"path": str(root), "name": root.name, "origin": source, "ties": ties, "registries": registries,
+            "counts": {kind: sum(t["kind"] == kind for t in ties) for kind in OUTWARD_ORDER}, "notes": notes}
+
+
 def relations_mermaid(relations: dict[str, Any], show_untied: bool = False) -> str:
     """Mermaid flowchart: thick arrows for submodules, dashed for dependencies."""
     ident = lambda name: "r_" + re.sub(r"[^0-9A-Za-z]", "_", name)  # noqa: E731

@@ -21,7 +21,8 @@ The same history always plays the same tune.
 committed most plays the steel guitar, the next the bass, then electric piano, violin, flute,
 trumpet ... Everyone keeps the common time and rests while the others play. In MIDI that is
 one track per contributor, in ABC one voice, in the tab a line above the strings saying who
-plays each note.
+plays each note. `--ignorelist [FILE]` leaves identities out ([[contributor]]): their commits
+keep their place in time but are silent, and they get no instrument.
 
 ## Where
 

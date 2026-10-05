@@ -11,6 +11,9 @@ gitrecon commits PATH                             # its commit messages as recor
 gitrecon imports PATH                             # which file uses which (CaptorLex step 2)
 gitrecon imports PATH --format mermaid --save     # the same as a diagram of folders (--level file: of files)
 gitrecon relations ~/__WORKSHOP/forge/rattish     # ties between an owner's repositories: submodules, dependencies
+gitrecon relations PATH                           # one repository: fork parent, then dependencies by where they come from
+gitrecon contributors PATH --ignorelist           # who made it (bots left out); --format authors | pie
+gitrecon analyze PATH --format pie                # its languages as a Mermaid pie
 gitrecon score PATH                               # its history as guitar tablature (--format abc | midi)
 gitrecon score PATH --format midi --contributors-band-mode   # an instrument per contributor
 gitrecon gitgraph PATH --format mermaid --save    # its history as a Mermaid gitGraph
@@ -70,6 +73,27 @@ Submodules that point outside the folder are listed apart. Links in code and tex
 weaker tie and are left for a later circle.
 
 > **Remember!** `--save` writes `data/relations/<folder>.md`, in gitrecon's data folder.
+
+Pointed at one repository instead of a folder, `gitrecon relations` lists what that
+repository holds on to outside itself, the firmest tie first:
+
+| Tie | What it is |
+| --- | --- |
+| `fork` | the repository it was forked from (asked from GitHub; `--offline` skips it) |
+| `local` | a dependency that is a path on disk (`file:`, `link:`, `workspace:`) - a neighbour |
+| `registry` | a dependency from the ecosystem's public registry (npm, PyPI, Packagist, crates.io ...) |
+| `custom-registry` | a dependency from a registry the repository names itself (`.npmrc`, composer `repositories`) |
+| `git` | a dependency pulled straight from a git address (`github:user/repo`, `git+https://...`) |
+| `http` | a dependency that is a file behind a web address (a tarball, a wheel) |
+
+`--format mermaid` gives a pie of the kinds.
+
+## Who made it
+
+`gitrecon contributors` reads the git log of every branch ([[contributor]]). `--ignorelist`
+leaves out the identities of `resources/ignorelist.txt` (bots); `--ignorelist FILE` reads your
+own list. `--format authors` prints the text of an AUTHORS file, `--format pie` a Mermaid pie
+(`--by commits | lines | added`).
 
 ## Teaching it more
 
