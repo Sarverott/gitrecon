@@ -1,11 +1,11 @@
-"""Local language models through Ollama (the ``llm`` extra): chat, structured answers, embeddings.
+"""PARKED (2026-10-05): local language models.
 
-    from gitrecon.llm import Ollama
-    answer = Ollama().structured(CommitForm, "Describe this change: ...")
-
-What is built on it: ``gitrecon.llm.commit_writer`` (a commit message per changed file).
+``ollama.py`` (the interface) and ``commit_handler.py`` (commit messages written by a model)
+are kept commented out; nothing in gitrecon uses them. Committing per file lives in
+``gitrecon.committing`` and takes handlers. The digest's own small HTTP client
+(``gitrecon.digest.llm``) is a different, older thing and is untouched.
 """
 
-from gitrecon.llm.ollama import Ollama, find_host
-
-__all__ = ["Ollama", "find_host"]
+# from gitrecon.llm.ollama import Ollama, find_host
+#
+# __all__ = ["Ollama", "find_host"]

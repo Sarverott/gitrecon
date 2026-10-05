@@ -30,7 +30,8 @@ src/gitrecon/
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
-├── llm/            ollama — the model interface; commit_writer — a commit per changed file
+├── committing/     a commit per changed file: changes, form, handlers (registry + path), plan
+├── llm/            PARKED: the Ollama interface and model-backed commit handler, commented out
 ├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
 ├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
@@ -112,20 +113,18 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
   take the remote side and re-lock; version lines: keep the remote one.
 
-## Language models
+## Committing per file, and the parked model code
 
-- `gitrecon.llm.Ollama` is the interface (llm extra: the `ollama` package + pydantic):
-  `chat`, `structured(PydanticModel, prompt)`, `embed`, `models`, `pull`. Server: `OLLAMA_HOST`,
-  else localhost:11434, else localhost:11435 (the services container). Tests fake the client
-  (`Ollama(_client=...)`), never a server.
-- Reasoning models think whatever `think=False` says (deepseek-r1): give them room
-  (`num_predict`), and expect seconds to minutes per answer on a CPU.
-- `gitrecon.llm.commit_writer`: a commit per changed file; the form is commitizen's own
-  (`cz.questions()` / `cz.message()`); the prompt carries `file_facts` (language, lines, imports,
-  used-by); `--reader MODEL` puts a note-taking model before the writer. `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the
-  hooks do not stage everything or push per file. Do not run `--apply` on the user's
-  repository yourself: committing is theirs.
-- The OpenAI-compatible side (`digest/llm.py` TODO) is still open.
+- `gitrecon.committing`: `changes` / `form` / `handlers` / `plan`. A handler is
+  `handler(context: ChangeContext) -> dict | None`, registered with `@register("name")`; the
+  planner falls back to `path_handler` whenever a handler passes, raises or answers badly.
+  New ways of writing commit messages are new handlers - do not grow the planner.
+- `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the hooks do not stage everything or push
+  per file. Do not run `--apply` on the user's repository yourself: committing is theirs.
+- `src/gitrecon/llm/` is **parked** (the user's decision, 2026-10-05): the Ollama interface and
+  the model-backed handler are commented out, their tests skipped, the `llm` command gone.
+  Do not revive or extend it unasked. `gitrecon.digest.llm` (older HTTP client) is separate.
+- Importing commitizen disables existing loggers; `form._commitizen()` switches them back on.
 
 ## Contributors and the ignorelist
 
@@ -220,6 +219,19 @@ Clone commands take an optional path; without one, clones go to the active works
 - `app/` (not created yet, on purpose): the web interface, built later by others - do not
   write there. First the environment, the CLI and the terminal interface.
 
+## OpenSpec (being adopted)
+
+- `openspec/` holds specs (`specs/<capability>/spec.md`: what must hold) and changes
+  (`changes/<name>/`: proposal, spec delta, design, tasks). CLI: `openspec list`, `show`,
+  `status --change NAME`, `instructions ARTIFACT --change NAME`, `validate --all --strict`.
+- Project rules for OpenSpec artifacts are in `openspec/config.yaml` (context, per-artifact
+  rules). Keep them in step with this file.
+- An existing capability gets its spec when a change first touches it: a `baseline-<name>`
+  change that records current behaviour (example: `baseline-per-file-commits`), then the real
+  change on top. Archiving a change is the owner's call.
+- Generated files (`.github/agents`, `.github/prompts/opsx-*`, `.github/skills/openspec-*`,
+  `copilot-setup-steps.yml`) come from `openspec init` / `openspec update`: edit sparingly.
+
 ## Working rules
 
 - Python ≥ 3.12, managed with `uv`. Run tests: `task test`.
@@ -233,3 +245,4 @@ Clone commands take an optional path; without one, clones go to the active works
 - Pushing the map to Hugging Face and publishing posts are outward-facing: confirm first.
 - Respect GitHub rate limits and the Acceptable Use Policies; do not build profiles
   of private individuals.
+

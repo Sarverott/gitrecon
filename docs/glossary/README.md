@@ -41,8 +41,8 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Code analysis](code-analysis.md) | What a cloned repository is made of: languages, code and comment lines, names, links, Python structure, frameworks. |
 | [PeekerLex](peekerlex.md) | The quick, light reading of code: enough to know what a repository is made of. |
 | [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Steps 1 and 2 (one repository, one owner) built.* |
-| [LLM interface](llm.md) | Local language models through Ollama: plain answers, answers in a given shape, embeddings. |
-| [Commit writer](commit-writer.md) | A commit per changed file, each message written by a local model. |
+| [Commit writer](commit-writer.md) | A commit per changed file; who writes the messages is a handler. |
+| [LLM interface](llm.md) | *Parked.* An interface to local language models through Ollama - tried, set aside. |
 | [Humanish](humanish.md) | Human text read by grammar: sentences that follow rules become records. |
 | [Translation](translation.md) | Offline translation with Argos Translate, the engine inside LibreTranslate. |
 | [Score](score.md) | A repository's history as music: guitar tablature, ABC notation, a MIDI file. |

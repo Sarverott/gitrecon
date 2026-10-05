@@ -1,16 +1,15 @@
-"""The Ollama interface and the per-file commit writer - with a faked server, offline."""
-
-import json
-import subprocess
-from types import SimpleNamespace
+"""PARKED with gitrecon/llm/ (2026-10-05): tests of the Ollama interface and the model-backed
+commit handler. Skipped as a whole; kept for the day the approach is taken up again.
+"""
 
 import pytest
 
-pytest.importorskip("pydantic")
-pytest.importorskip("ollama")
+pytest.skip("gitrecon.llm is parked (the Ollama approach is set aside)", allow_module_level=True)
 
-from gitrecon.llm import Ollama, commit_writer, find_host  # noqa: E402
-from gitrecon.main import main  # noqa: E402
+import json  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
+
+from gitrecon.llm import Ollama, commit_writer, find_host  # noqa: E402, F401
 
 
 class FakeServer:
@@ -75,111 +74,6 @@ def test_structured_answers_validate_retry_and_think_switch():
         llm_with("nonsense", "more nonsense").structured(Pet, "x")
     old = llm_with({"name": "Loki", "age": 2}, refuse_think=True)                 # a model without a thinking mode
     assert old.structured(Pet, "x").name == "Loki" and "think" not in old.client.calls[-1]
-
-
-# --- commit messages -----------------------------------------------------------------------
-
-
-def test_build_message_is_always_a_conventional_commit():
-    build = commit_writer.build_message
-    assert build({"prefix": "feat", "scope": "cli tools", "subject": "Add the thing.", "body": "Because."}) == (
-        "feat(cli-tools): add the thing\n\nBecause.")
-    assert build({"prefix": "fix", "subject": "x" * 200}).splitlines()[0] == "fix: " + "x" * 72
-    assert build({"prefix": "chore", "scope": "", "subject": "update lock"}) == "chore: update lock"
-    breaking = build({"prefix": "feat", "subject": "drop v1", "is_breaking_change": True, "body": "v1 is gone"})
-    assert "BREAKING CHANGE: v1 is gone" in breaking
-    with pytest.raises(ValueError):
-        build({"prefix": "feature", "subject": "x"})
-    assert set(commit_writer.commit_form().model_json_schema()["properties"]) == {
-        "prefix", "scope", "subject", "body", "is_breaking_change", "footer"}       # commitizen's own questions
-
-
-@pytest.fixture
-def repo(tmp_path):
-    root = tmp_path / "proj"
-    (root / "pkg").mkdir(parents=True)
-    (root / "tests").mkdir()
-    git = lambda *a: subprocess.run(["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@t", *a],  # noqa: E731
-                                    check=True, capture_output=True, text=True).stdout
-    git("init", "--quiet", "-b", "development")
-    (root / "pkg" / "__init__.py").write_text("")
-    (root / "pkg" / "core.py").write_text("def add(a, b):\n    return a - b\n")
-    (root / "old.txt").write_text("x\n")
-    (root / "README.md").write_text("# proj\n")
-    git("add", ".")
-    git("commit", "--quiet", "-m", "feat: start")
-    # the changes: a fix, a new module using it, a test, docs, a deletion
-    (root / "pkg" / "core.py").write_text("def add(a, b):\n    return a + b\n")
-    (root / "pkg" / "app.py").write_text("from pkg.core import add\n\nprint(add(1, 2))\n")
-    (root / "tests" / "test_core.py").write_text("from pkg.core import add\n\ndef test_add():\n    assert add(1, 2) == 3\n")
-    (root / "README.md").write_text("# proj\n\nAdds numbers.\n")
-    (root / "old.txt").unlink()
-    return root, git
-
-
-def test_changes_and_their_order(repo):
-    root, _ = repo
-    changes = commit_writer.changed_files(root)
-    assert {(c.path, c.status) for c in changes} == {
-        ("pkg/core.py", "modified"), ("pkg/app.py", "added"), ("tests/test_core.py", "added"),
-        ("README.md", "modified"), ("old.txt", "deleted")}
-    ordered = [c.path for c in commit_writer.order_changes(root, changes)]
-    assert ordered == ["pkg/core.py", "pkg/app.py", "tests/test_core.py", "README.md", "old.txt"]   # what is imported first
-    diff = commit_writer.file_diff(root, changes[[c.path for c in changes].index("pkg/core.py")])
-    assert "-    return a - b" in diff and "+    return a + b" in diff
-    new = commit_writer.file_diff(root, commit_writer.Change("pkg/app.py", "added"))
-    assert new.startswith("+from pkg.core import add")
-
-
-def test_plan_with_a_model_and_fallback(repo):
-    root, _ = repo
-    llm = llm_with({"prefix": "fix", "scope": "core", "subject": "Add instead of subtracting.", "body": "The sum was a difference."},
-                   "not json", "still not json")                       # the second file: the model fails twice
-    plan = commit_writer.plan_commits(root, llm, limit=2)
-    assert [(s["path"], s["by"]) for s in plan] == [("pkg/core.py", "deepseek-r1:1.5b"), ("pkg/app.py", "fallback")]
-    assert plan[0]["message"] == "fix(core): add instead of subtracting\n\nThe sum was a difference."
-    assert plan[1]["message"] == "chore(pkg): add app.py"
-    prompt = llm.client.calls[0]["messages"][1]["content"]
-    assert "File: pkg/core.py" in prompt and "+    return a + b" in prompt
-    plain = commit_writer.plan_commits(root)                            # no model at all
-    assert [s["message"] for s in plain] == ["chore(pkg): update core.py", "chore(pkg): add app.py",
-                                             "test(tests): add test_core.py", "docs: update README.md",
-                                             "docs: remove old.txt"]
-
-
-def test_apply_makes_one_commit_per_file(repo, capsys):
-    root, git = repo
-    (root / "untouched.txt").write_text("left alone\n")
-    plan = [s for s in commit_writer.plan_commits(root) if s["path"] != "untouched.txt"]
-    done = commit_writer.apply_plan(root, plan)
-    assert all(step["committed"] for step in done) and len(done) == 5
-    log = git("log", "--format=%s", "--name-status").split("\n\n")
-    assert git("log", "--format=%s").splitlines()[:5] == ["docs: remove old.txt", "docs: update README.md",
-                                                           "test(tests): add test_core.py", "chore(pkg): add app.py",
-                                                           "chore(pkg): update core.py"]
-    assert git("show", "--stat", "--format=", "HEAD~1").count("|") == 1          # one file in each commit
-    assert git("status", "--porcelain").strip() == "?? untouched.txt" and log    # the rest of the tree is as it was
-
-
-def test_commit_files_command(repo, capsys, monkeypatch):
-    root, git = repo
-    assert main(["commit-files", str(root), "--no-model", "--limit", "2"]) == 0
-    out = capsys.readouterr().out
-    assert "modified  pkg/core.py" in out and "a plan of 2 commits; nothing was committed" in out
-    assert git("log", "--oneline").count("\n") == 1                            # still only the first commit
-    assert main(["commit-files", str(root), "--no-model", "--apply", "--json"]) == 0
-    assert len([s for s in json.loads(capsys.readouterr().out) if s["committed"]]) == 5
-    assert main(["commit-files", str(root), "--no-model"]) == 0 and "nothing changed" in capsys.readouterr().out
-
-
-def test_commitizen_does_not_silence_our_loggers():
-    import logging
-
-    ours = logging.getLogger("gitrecon.sources.github_api")
-    ours.disabled = False
-    commit_writer.commit_types()
-    commit_writer.build_message({"prefix": "feat", "subject": "x"})
-    assert not ours.disabled
 
 
 def test_reader_model_takes_notes_for_the_writer(repo):
