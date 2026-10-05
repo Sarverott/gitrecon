@@ -64,7 +64,7 @@ tasks:
       - task: scripts:sync
 
   commit:files:
-    desc: 'A commit per changed file, messages by a local model - a plan; task commit:files -- --apply commits'
+    desc: 'A commit per changed file, messages by a handler - a plan; task commit:files -- --apply commits'
     cmds:
       - uv run --quiet gitrecon commit-files . {{.CLI_ARGS}}
 
