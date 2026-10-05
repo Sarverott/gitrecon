@@ -46,6 +46,7 @@ class Commit:
     subject: str
     tags: list[str] = field(default_factory=list)
     lane: str = ""
+    email: str = ""
 
     @property
     def short(self) -> str:
@@ -62,14 +63,14 @@ def _git(path: Path, *args: str) -> str:
 def read_history(path: str | Path, max_commits: int | None = None) -> list[Commit]:
     """Commits of every branch (local and remote), parents before children; newest ``max_commits``."""
     path = Path(path).expanduser()
-    fmt = SEP.join(["%H", "%P", "%ct", "%an", "%s"])
-    args = ["log", "--branches", "--remotes", "--topo-order", f"--format={fmt}"]
+    fmt = SEP.join(["%H", "%P", "%ct", "%aN", "%aE", "%s"])
+    args = ["log", "--branches", "--remotes", "--topo-order", "--use-mailmap", f"--format={fmt}"]
     if max_commits:
         args.append(f"--max-count={max_commits}")
     commits = []
     for line in _git(path, *args).splitlines():
-        sha, parents, time, author, subject = line.split(SEP, 4)
-        commits.append(Commit(sha, parents.split(), int(time), author, subject))
+        sha, parents, time, author, email, subject = line.split(SEP, 5)
+        commits.append(Commit(sha, parents.split(), int(time), author, subject, email=email))
     commits.reverse()
     tags = _git(path, "for-each-ref", "refs/tags", f"--format=%(refname:short){SEP}%(objectname){SEP}%(*objectname)")
     by_sha = {c.sha: c for c in commits}

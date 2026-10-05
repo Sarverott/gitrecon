@@ -32,6 +32,24 @@ Variables can also come from dotenv files, read in this order without overriding
 is already set: `GITRECON_ENV_FILE`, the project's `.env`, then `__WORKSHOP/forge/.env`
 (a temporary home for workshop secrets).
 
+## Local models
+
+`gitrecon llm`, `gitrecon commit-files` and `gitrecon digest` talk to an Ollama server
+([[llm]]). Either install Ollama on the host, or start the one in [[services]]
+(`task services:up -- ollama`, published on `localhost:11435`). Then get a model:
+
+```sh
+gitrecon llm pull deepseek-r1:1.5b      # small (1.1 GB), runs on a CPU; bigger models answer better
+gitrecon llm models
+gitrecon llm ask "say hello"
+```
+
+| Variable | Meaning |
+| --- | --- |
+| `OLLAMA_HOST` | where the server is; without it `localhost:11434`, then `localhost:11435` are tried |
+| `OLLAMA_MODEL` | the model to use; without it the server's first |
+| `OLLAMA_API_KEY` | a key for a remote server; sent only over https |
+
 ## Where things go
 
 | Path | What | Override |
@@ -71,6 +89,7 @@ task docker:run -- menu                  # the interactive menu (commands and st
 | `net` | paramiko, scapy | network reconnaissance |
 | `code` | tree-sitter, tree-sitter-language-pack | `gitrecon analyze --deep` (CaptorLex) |
 | `translate` | argostranslate (brings torch, about 5 GB with its CUDA libraries) | `gitrecon translate` |
+| `math` | sympy | `gitrecon.text.mathtext`: formulas in LaTeX as SymPy expressions |
 | `all` | every extra above | |
 
 `task install` runs `uv sync --all-extras`; a lighter install is `uv sync --extra hub`.

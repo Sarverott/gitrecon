@@ -30,6 +30,7 @@ src/gitrecon/
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
+├── llm/            ollama — the model interface; commit_writer — a commit per changed file
 ├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
 ├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
@@ -110,6 +111,30 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   diverged branch (the loop back-merges master into development on GitHub). Trial merge in
   memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
   take the remote side and re-lock; version lines: keep the remote one.
+
+## Language models
+
+- `gitrecon.llm.Ollama` is the interface (llm extra: the `ollama` package + pydantic):
+  `chat`, `structured(PydanticModel, prompt)`, `embed`, `models`, `pull`. Server: `OLLAMA_HOST`,
+  else localhost:11434, else localhost:11435 (the services container). Tests fake the client
+  (`Ollama(_client=...)`), never a server.
+- Reasoning models think whatever `think=False` says (deepseek-r1): give them room
+  (`num_predict`), and expect seconds to minutes per answer on a CPU.
+- `gitrecon.llm.commit_writer`: a commit per changed file; the form is commitizen's own
+  (`cz.questions()` / `cz.message()`). `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the
+  hooks do not stage everything or push per file. Do not run `--apply` on the user's
+  repository yourself: committing is theirs.
+- The OpenAI-compatible side (`digest/llm.py` TODO) is still open.
+
+## Contributors and the ignorelist
+
+- `gitrecon.mapping.contributors`: people from the git log (mailmap honoured; same address or
+  same name = one person). `--ignorelist [FILE]` (default `resources/ignorelist.txt`) on
+  `contributors` and `score`. Ignorelist patterns use only `*` and `?` - `[bot]` is literal.
+- Mermaid pies come from `contributors.pie()` (contributors, languages, kinds of outward ties).
+- `gitrecon relations REPOSITORY` = outward ties in the user's order of firmness: fork, (local),
+  registry, custom-registry, git, http; stars after them (not built), links last.
+- `gitrecon.text.mathtext` (math extra): LaTeX -> SymPy through SymPy's Lark parser; small on purpose.
 
 ## Humanish and translation
 

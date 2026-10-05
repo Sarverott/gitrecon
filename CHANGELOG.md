@@ -1,3 +1,13 @@
+## v0.7.0 (2026-10-05)
+
+### BREAKING CHANGE
+
+- git repositories now plays as bands and it makes me feel warm calm flow through my soul
+
+### Fix
+
+- **new-workflow,-some-fixings,-issue-templates-update,-circles-defined-further,-band-mode-is-ready**: gitguardian watches now, errors were handled, relations identifying were expanded, band mode tested on mit-license by remy
+
 ## v0.6.1 (2026-10-05)
 
 ## v0.6.0 (2026-10-05)

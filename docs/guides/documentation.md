@@ -25,3 +25,9 @@ Layout:
 
 A new glossary page also goes into the glossary index (`glossary/README.md`) and the
 `nav` of `mkdocs.yml`.
+
+## Scrapnotes
+
+`task scrapnote` (or `task scrapnote -- "a title"`) starts `docs/devlog/scrapnote-<UNIXUSAT>.md`,
+named by the current moment in milliseconds, and prints its path:
+`$EDITOR "$(task scrapnote)"`.

@@ -11,6 +11,10 @@ come from REST; fork parents from GraphQL. Where GraphQL hides an upstream (it s
 organization refusing the token), REST is asked instead; an organization refusing the whole
 query is listed under "not seen" in the summary (`notes` in JSON).
 
+The same graph as a Mermaid **mindmap** (`--format mindmap`): the user in the middle,
+organizations and repositories around. Shapes are the legend - a circle is the user, a square
+an organization, a rounded box a repository, a hexagon the repository a fork comes from.
+
 ## Where
 
 `gitrecon.mapping.network` (`collect_network`, `owner_network`), `gitrecon.mapping.render`

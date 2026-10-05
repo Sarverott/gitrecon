@@ -1,6 +1,6 @@
 [project]
 name = "gitrecon"
-version = "0.6.1"
+version = "0.7.0"
 description = "Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -47,7 +47,9 @@ code = [
 ]
 # offline translation with Argos Translate (the engine inside LibreTranslate)
 translate = ["argostranslate>=1.9.6"]
-all = ["gitrecon[hub,llm,net,code,translate]"]
+# formulas written in LaTeX as SymPy expressions (gitrecon.text.mathtext)
+math = ["sympy>=1.13"]
+all = ["gitrecon[hub,llm,net,code,translate,math]"]
 
 [project.scripts]
 gitrecon = "gitrecon.main:main"
