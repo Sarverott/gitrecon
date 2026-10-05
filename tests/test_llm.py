@@ -180,3 +180,27 @@ def test_commitizen_does_not_silence_our_loggers():
     commit_writer.commit_types()
     commit_writer.build_message({"prefix": "feat", "subject": "x"})
     assert not ours.disabled
+
+
+def test_reader_model_takes_notes_for_the_writer(repo):
+    root, _ = repo
+    notes = {"summary": "The sum was computed as a difference.", "changes": ["add instead of subtract"],
+             "kind": "fix", "reason": "wrong operator"}
+    form = {"prefix": "fix", "scope": "core", "subject": "add the operands instead of subtracting them"}
+    llm = llm_with(notes, form)
+    plan = commit_writer.plan_commits(root, llm, model="writer:7b", reader="reader:1.5b", limit=1)
+    step = plan[0]
+    assert step["message"] == "fix(core): add the operands instead of subtracting them" and step["by"] == "writer:7b"
+    assert step["notes"] == notes
+    assert step["facts"] | {"used_by_examples": []} == {
+        "path": "pkg/core.py", "status": "modified", "language": "Python", "kind": "code", "lines_added": 1,
+        "lines_deleted": 1, "imports": [], "used_by": 2, "used_by_examples": []}
+    read, write = llm.client.calls
+    assert read["model"] == "reader:1.5b" and "It is used by 2 file(s)" in read["messages"][1]["content"]
+    assert write["model"] == "writer:7b" and "Notes of a reader who studied the change" in write["messages"][1]["content"]
+    assert "- add instead of subtract" in write["messages"][1]["content"]
+    # a reader that fails leaves the writer with the diff itself
+    alone = llm_with("junk", "junk", form)
+    step = commit_writer.plan_commits(root, alone, reader="reader:1.5b", limit=1)[0]
+    assert step["notes"] is None and step["message"].startswith("fix(core)")
+    assert "The change:" in alone.client.calls[-1]["messages"][1]["content"]
