@@ -21,3 +21,15 @@ tasks:
     dir: '{{.TASKFILE_DIR}}/..'
     cmds:
       - uv run --quiet shellcheck -x scripts/delegated/workflow-gh/*.sh scripts/delegated/workflow-gh/*/*.sh services/*/*/*.sh
+
+  merge:check:
+    desc: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 scripts/merge_remote.py --check
+
+  merge:remote:
+    desc: Bring the remote version of the branch in - fast-forward or merge; never pushes
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - python3 scripts/merge_remote.py {{.CLI_ARGS}}

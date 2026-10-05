@@ -1,0 +1,31 @@
+# Meanings for the controlled sentences gitrecon reads (grammars: grammars/humanish/).
+
+# commit types (Conventional Commits + commitizen's bump): what kind of work a commit is
+commit_types:
+  feat:     {work: feature,       meaning: "a new capability"}
+  fix:      {work: fix,           meaning: "a defect repaired"}
+  docs:     {work: documentation, meaning: "documentation only"}
+  style:    {work: upkeep,        meaning: "formatting, no change of meaning"}
+  refactor: {work: upkeep,        meaning: "restructuring without new behaviour"}
+  perf:     {work: feature,       meaning: "faster or lighter"}
+  test:     {work: upkeep,        meaning: "tests added or corrected"}
+  build:    {work: delivery,      meaning: "build system or dependencies"}
+  ci:       {work: delivery,      meaning: "continuous integration"}
+  chore:    {work: upkeep,        meaning: "housekeeping"}
+  revert:   {work: fix,           meaning: "an earlier commit undone"}
+  bump:     {work: delivery,      meaning: "a version released"}
+
+# labels concluded from a repository's commits (gitrecon.humanish.commits.commit_labels)
+commit_labels:
+  min_commits: 10            # fewer own (non-merge) commits: no conclusion
+  conventional_share: 0.8    # conventional-commits: this share of own commits follows the form
+  fix_share: 0.5             # fix-heavy: this share of conventional commits are fixes
+  releases: 3                # release-automation: this many bump commits
+
+# requirement levels: terminal of grammars/humanish/rfc2119.lark -> what the sentence does
+requirement_levels:
+  OBLIGATION:     {level: obligation,     strength: 2}
+  PROHIBITION:    {level: prohibition,    strength: 2}
+  RECOMMENDATION: {level: recommendation, strength: 1}
+  DISCOURAGEMENT: {level: discouragement, strength: 1}
+  PERMISSION:     {level: permission,     strength: 0}

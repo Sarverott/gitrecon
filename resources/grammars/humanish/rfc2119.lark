@@ -1,0 +1,15 @@
+// Requirement keywords of normative text (RFC 2119 / RFC 8174: only in capitals).
+// A keyword in quotes is a mention, not a requirement. Lexer only: a text becomes requirement keywords, sentence ends and everything else.
+start: (PROHIBITION | OBLIGATION | DISCOURAGEMENT | RECOMMENDATION | PERMISSION | SENTENCE_END | WORD | OTHER)*
+
+PROHIBITION.6: /(?<!["'])\b(MUST|SHALL)\s+NOT\b(?!["'])/
+DISCOURAGEMENT.6: /(?<!["'])\b(SHOULD\s+NOT|NOT\s+RECOMMENDED)\b(?!["'])/
+OBLIGATION.5: /(?<!["'])\b(MUST|SHALL|REQUIRED)\b(?!["'])/
+RECOMMENDATION.5: /(?<!["'])\b(SHOULD|RECOMMENDED)\b(?!["'])/
+PERMISSION.5: /(?<!["'])\b(MAY|OPTIONAL)\b(?!["'])/
+// a full stop, or a blank line; not the dot of "e.g." or "3.1"
+SENTENCE_END.4: /(?<!\.\w)[.!?]+(?=\s|$)|\n[ \t]*\n/
+WORD.2: /\w+/
+OTHER.0: /[^\s]/
+
+%ignore /[^\S\n]+|\n(?![ \t]*\n)/
