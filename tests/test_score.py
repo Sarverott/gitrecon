@@ -71,3 +71,35 @@ def test_score_command(tmp_path, capsys, monkeypatch):
     assert (tmp_path / "data" / "scores" / "song.abc").read_text() == data["score"]
     assert main(["score", str(repo.path), "--format", "midi"]) == 0
     assert (tmp_path / "data" / "scores" / "song.mid").read_bytes()[:4] == b"MThd"
+
+
+def test_contributors_band_mode(tmp_path, capsys, monkeypatch):
+    history = [commit("0", "master", 0), commit("1", "master", 600), commit("5", "master", 1200),
+               commit("a", "development", 1800, parents=["5"])]
+    for item, author in zip(history, ["Ann", "Bob", "Ann", "Ann"]):
+        item.author = author
+    notes = score.score_notes(history)
+    assert score.band(notes) == [
+        {"author": "Ann", "notes": 3, "program": 25, "instrument": "steel guitar"},     # the busiest plays guitar
+        {"author": "Bob", "notes": 1, "program": 32, "instrument": "acoustic bass"}]
+
+    tab = score.to_tab(notes, band_mode=True)
+    assert tab.splitlines()[0] == " |1 2 1 1" and tab.splitlines()[1].startswith("e|")
+    assert tab.splitlines()[-2:] == ["1 = Ann (steel guitar, 3 notes)", "2 = Bob (acoustic bass, 1 notes)"]
+
+    abc = score.to_abc(notes, band_mode=True)
+    assert 'V:1 name="Ann" clef=treble-8' in abc and "%%MIDI program 32" in abc
+    voices = abc.split("V:1\n")[1].split("V:2\n")
+    assert voices[0].splitlines()[1] == "E,, z E,, A,,4 |" and voices[1].splitlines()[1] == "z G,, z z4 |"  # Bob rests while Ann plays
+
+    midi = score.to_midi(notes, band_mode=True)
+    assert struct.unpack(">IHHH", midi[4:14]) == (6, 1, 3, 480)             # format 1: tempo track + one per contributor
+    assert midi.count(b"MTrk") == 3 and b"Ann (steel guitar)" in midi and b"\xc1\x20" in midi   # channel 2: program 32
+    assert score.to_midi(notes)[:14] == b"MThd" + struct.pack(">IHHH", 6, 0, 1, 480)             # the default is unchanged
+
+    monkeypatch.setenv("GITRECON_DATA", str(tmp_path / "data"))
+    repo = Repo(tmp_path / "band")
+    repo.commit("feat: 1")
+    assert main(["score", str(repo.path), "--format", "midi", "--contributors-band-mode"]) == 0
+    assert "1 contributors: t (steel guitar)" in capsys.readouterr().out
+    assert (tmp_path / "data" / "scores" / "band-band.mid").read_bytes()[8:10] == b"\x00\x01"

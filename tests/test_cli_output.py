@@ -191,3 +191,22 @@ def test_rfc_json_and_urls(data_dir, monkeypatch, capsys):
 
     main(["rfc", "--search", "ospf", "--urls"])
     assert capsys.readouterr().out.splitlines() == ["https://www.rfc-editor.org/rfc/rfc10041"]
+
+
+def test_words_after_options_reach_the_command():
+    """Old Pythons (< 3.12.7) reject positionals that follow options; the entry point collects them."""
+    from gitrecon import cli
+
+    parser = cli.build_parser()
+    args, rest = parser.parse_known_args(["translate", "text", "--to", "pl"])
+    cli._late_positionals(parser, args, ["hello", "world"])
+    assert args.words == ["hello", "world"]
+    args, _ = parser.parse_known_args(["analyze"])
+    cli._late_positionals(parser, args, ["a", "b"])
+    assert args.path == ["a", "b"]                                  # the default "." is replaced, not kept
+    args, _ = parser.parse_known_args(["stars", "sarverott"])
+    with pytest.raises(SystemExit):
+        cli._late_positionals(parser, args, ["extra"])              # commands without a list argument still refuse
+    args, _ = parser.parse_known_args(["translate", "text"])
+    with pytest.raises(SystemExit):
+        cli._late_positionals(parser, args, ["--nonsense"])         # and unknown options are still errors
