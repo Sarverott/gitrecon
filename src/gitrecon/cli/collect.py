@@ -467,7 +467,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--save", action="store_true", help="store new items in the raw buffer")
     p.add_argument("--items", dest="verbose_items", action="store_true", help="list new items")
     add_output_flags(p)  # --json: {"feeds": [...], "items": [...]}; --urls: item links
-    p.set_defaults(func=cmd_feeds)
+    p.set_defaults(func=cmd_feeds, rest="url")
 
     p = sub.add_parser("rfc", help="RFC Editor index: list, search, save")
     p.add_argument("--search", nargs="+", help="words that must all appear in the entry")

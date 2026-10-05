@@ -10,7 +10,9 @@ gitrecon analyze PATH --no-save                   # only print, keep nothing
 gitrecon commits PATH                             # its commit messages as records and labels
 gitrecon imports PATH                             # which file uses which (CaptorLex step 2)
 gitrecon imports PATH --format mermaid --save     # the same as a diagram of folders (--level file: of files)
+gitrecon relations ~/__WORKSHOP/forge/rattish     # ties between an owner's repositories: submodules, dependencies
 gitrecon score PATH                               # its history as guitar tablature (--format abc | midi)
+gitrecon score PATH --format midi --contributors-band-mode   # an instrument per contributor
 gitrecon gitgraph PATH --format mermaid --save    # its history as a Mermaid gitGraph
 ```
 
@@ -53,6 +55,21 @@ JavaScript, TypeScript, Vue, Svelte, C, C++, PHP (with composer's PSR-4 map), Ru
 CSS by the patterns in `resources/imports.yml`.
 
 > **Remember!** `--save` writes `data/imports/<repository>-<level>.md`, in gitrecon's data folder.
+
+## What holds an owner's repositories together
+
+`gitrecon relations FOLDER` reads a folder of clones (what `repo-clone` and `org-clone` make)
+and lists the ties between them, strongest first:
+
+| Tie | Read from | Why it ranks there |
+| --- | --- | --- |
+| `submodule` | `.gitmodules` (also URLs relative to the repository's own) | one repository carries the other inside itself |
+| `dependency` | manifests: a dependency named like the package another repository publishes, or given as its git URL | softer - versions and registries stand in between |
+
+Submodules that point outside the folder are listed apart. Links in code and text are a
+weaker tie and are left for a later circle.
+
+> **Remember!** `--save` writes `data/relations/<folder>.md`, in gitrecon's data folder.
 
 ## Teaching it more
 
