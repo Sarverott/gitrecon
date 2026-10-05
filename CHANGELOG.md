@@ -1,3 +1,9 @@
+## v0.8.1 (2026-10-05)
+
+### Fix
+
+- **fixing-mess**: chaos that appears after gitnexus and other tools was introduced was exhausting
+
 ## v0.8.0 (2026-10-05)
 
 ### Fix
