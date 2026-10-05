@@ -1,0 +1,10 @@
+# Identities left out when contributors are listed, credited or given instruments.
+# One per line: a name or an e-mail address as git records it; * and ? are wildcards;
+# letter case does not matter. Used with --ignorelist (this file is the default list;
+# --ignorelist PATH reads another one).
+
+# automation
+*[bot]
+dependabot
+renovate
+github-actions

@@ -161,3 +161,28 @@ def test_token_refusal_is_warned_once_per_organization(caplog):
         list(client.paginate("/orgs/The-Apokryf/repos"))
     assert client.anonymous_fallbacks == 2 and client.refusing_owners == {"The-Apokryf"}
     assert len([r for r in caplog.records if "refuses classic tokens" in r.message]) == 1
+
+
+def test_owner_mindmap_shapes_and_limits():
+    from gitrecon.mapping.graph import ActivityGraph
+    from gitrecon.mapping.network import FORK_OF, MEMBER_OF, OWNED_BY
+    from gitrecon.mapping.render import owner_mindmap
+    from gitrecon.models import Organization, Repository, User
+
+    graph = ActivityGraph()
+    me, org = User(login="Me"), Organization(login="The-Org")
+    graph.link(me, MEMBER_OF, org, "x")
+    for name, stars in (("tool", 5), ("lib", 2), ("toy", 0)):
+        graph.link(Repository(full_name=f"Me/{name}", raw={"x": 1}, stargazers_count=stars), OWNED_BY, me, "x")
+    fork = Repository(full_name='The-Org/say-"hi"', raw={"x": 1}, fork=True)
+    upstream = Repository(full_name="up/stream")
+    graph.link(fork, OWNED_BY, org, "x")
+    graph.link(fork, FORK_OF, upstream, "x")
+    graph.link(upstream, OWNED_BY, User(login="up"), "x")
+
+    lines = owner_mindmap(graph, me.key, max_repos=2).splitlines()
+    assert lines[:2] == ["mindmap", "  root((Me))"]
+    assert lines[2:5] == ['    r1("tool ★5")', '    r2("lib ★2")', '    m3("+1 more")']        # most starred first
+    assert lines[5:8] == ['    o4["The-Org"]', """      r5("say-'hi'")""", '        u6{{"up/stream"}}']
+    assert lines[8] == "    legend)legend(" and len(lines) == 13
+    assert "legend" not in owner_mindmap(graph, me.key, legend=False)

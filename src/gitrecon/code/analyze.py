@@ -24,10 +24,15 @@ MAX_LEXED_FILES = 3_000    # per repository; the rest is counted by size only
 TOP = 30
 
 
-def repo_files(root: Path) -> list[Path]:
-    """Tracked files of a git repository, or every file of a plain folder (heavy folders left out)."""
+def repo_files(root: Path, untracked: bool = False) -> list[Path]:
+    """Tracked files of a git repository, or every file of a plain folder (heavy folders left out).
+
+    ``untracked=True`` adds new files git does not track yet (ignored ones stay out): the
+    working tree as it is about to be committed.
+    """
     if (root / ".git").exists():
-        done = subprocess.run(["git", "-C", str(root), "ls-files", "-z"], capture_output=True, check=False)
+        extra = ["--cached", "--others", "--exclude-standard"] if untracked else []
+        done = subprocess.run(["git", "-C", str(root), "ls-files", "-z", *extra], capture_output=True, check=False)
         if done.returncode == 0:
             names = [n for n in done.stdout.decode("utf-8", errors="replace").split("\0") if n]
             return [root / n for n in names if (root / n).is_file()]

@@ -54,6 +54,10 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
     name = lambda key: render._name(key, graph)  # noqa: E731
 
     def diagram() -> str:
+        if args.format == "mindmap":
+            user_key = next((k for k, node in graph.nodes.items()
+                             if node.kind == "user" and k.split(":", 1)[1] == args.user.lower()), f"user:{args.user.lower()}")
+            return render.owner_mindmap(graph, user_key, max_repos=args.max_repos)
         if args.level == "repos":
             return render.repos_mermaid(graph, max_nodes=args.max_nodes, forks_only=args.forks_only)
         return render.owners_mermaid(graph, min_forks=args.min_forks)
@@ -73,12 +77,16 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
             lines += ["", "not seen:"] + [f"  {note}" for note in graph.notes]
         return "\n".join(lines)
 
-    text = {"summary": summary, "mermaid": diagram, "dot": lambda: render.to_dot(graph)}[args.format]
+    text = {"summary": summary, "mermaid": diagram, "mindmap": diagram, "dot": lambda: render.to_dot(graph)}[args.format]
     if args.save:
         folder = config.data_dir / "networks"
         folder.mkdir(parents=True, exist_ok=True)
-        path = folder / f"{args.user}-{args.level}.md"
-        path.write_text(f"# Network of {args.user} ({args.level})\n\n```mermaid\n{diagram()}\n```\n", encoding="utf-8")
+        what = "mindmap" if args.format == "mindmap" else args.level
+        legend = ("\nShapes: a circle is the user, a square an organization, a rounded box a repository, "
+                  "a hexagon the repository a fork comes from.\n" if what == "mindmap" else "")
+        path = folder / f"{args.user}-{what}.md"
+        path.write_text(f"# Network of {args.user} ({what})\n{legend}\n```mermaid\n{diagram().rstrip()}\n```\n",
+                        encoding="utf-8")
         out.note(f"saved {path}")
     if graph.notes and args.format != "summary":
         for note in graph.notes:
@@ -130,8 +138,19 @@ def cmd_analyze(args: argparse.Namespace, config: Config, out: Output) -> int:
 
     for result in results:
         describe(result)
-    out.listing(results, text=text, data=lambda r: r, url=lambda r: None,
-                summary=f"-- {len(results)} repositories analysed" if len(results) > 1 else None)
+    if args.format == "pie" and not out.machine:
+        from gitrecon.mapping.contributors import pie
+
+        shares: dict[str, float] = {}
+        for r in results:
+            for name, e in r["languages"].items():
+                if e["kind"] in ("code", "markup"):
+                    shares[name] = shares.get(name, 0) + round(e["bytes"] / 1024, 1)
+        title = results[0]["name"] if len(results) == 1 else f"{len(results)} repositories"
+        print(pie(shares, f"Languages of {title} (KiB of code)", top=args.limit), end="")
+    else:
+        out.listing(results, text=text, data=lambda r: r, url=lambda r: None,
+                    summary=f"-- {len(results)} repositories analysed" if len(results) > 1 else None)
     if not args.no_save:
         from gitrecon.hub.huggingface import default_local_dir
 
@@ -226,9 +245,97 @@ def cmd_imports(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def add_ignorelist_flag(p: argparse.ArgumentParser, effect: str) -> None:
+    p.add_argument("--ignorelist", nargs="?", const="", metavar="FILE",
+                   help=f"skip the identities listed in FILE (default list: resources/ignorelist.txt - bots): {effect}")
+
+
+def _ignorelist(args: argparse.Namespace, out: Output) -> list[str] | None:
+    if args.ignorelist is None:
+        return None
+    from gitrecon.mapping.contributors import read_ignorelist
+
+    return read_ignorelist(args.ignorelist or None)
+
+
+def cmd_contributors(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.mapping import contributors as who
+
+    path = Path(args.path).expanduser().resolve()
+    people = who.contributors(path, args.max_commits or None, ignore=_ignorelist(args, out))
+    if args.format == "authors":
+        text = who.authors_text(people, path.name)
+    elif args.format == "pie":
+        text = who.contributors_pie(people, path.name, by=args.by, top=args.top)
+    else:
+        text = None
+    if text is None:
+        out.listing(people, data=lambda c: c.to_json(), url=lambda c: None,
+                    text=lambda c: f"{c.commits + c.merges:>6} commits ({c.merges} merges)  +{c.added:<8} -{c.deleted:<8} "
+                                   f"{c.to_json()['first']} .. {c.to_json()['last']}  {c.name}"
+                                   + (f" <{c.emails[0]}>" if c.emails else "")
+                                   + (f"  (also: {', '.join(c.names[:3])})" if c.names else ""),
+                    summary=lambda found: f"-- {len(found)} contributors of {path.name}")
+    else:
+        out.result({"repository": path.name, "format": args.format, "text": text,
+                    "contributors": [c.to_json() for c in people]}, text=text.rstrip("\n"))
+    if args.save:
+        folder = config.data_dir / "contributors"
+        folder.mkdir(parents=True, exist_ok=True)
+        if args.format == "pie":
+            target = folder / f"{path.name}-{args.by}.md"
+            target.write_text(f"# Contributors of {path.name}\n\n```mermaid\n{text}```\n", encoding="utf-8")
+        else:
+            target = folder / f"{path.name}.AUTHORS"
+            target.write_text(who.authors_text(people, path.name), encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
+def _outward(args: argparse.Namespace, config: Config, out: Output) -> int:
+    """`relations` on one repository: what it holds on to outside itself (the third circle)."""
+    from gitrecon.code.relations import OUTWARD_ORDER, outward_ties
+    from gitrecon.mapping.contributors import pie
+
+    client = None
+    if not args.offline:
+        from gitrecon.sources.github_api import GitHubClient
+
+        client = GitHubClient(config)
+    found = outward_ties(args.path, client)
+    diagram = pie({kind: count for kind, count in found["counts"].items()},
+                  f"What {found['name']} holds on to, by kind of tie")
+
+    def summary() -> str:
+        lines = [f"{found['name']}: " + ", ".join(f"{found['counts'][kind]} {kind}" for kind in OUTWARD_ORDER)]
+        for kind in OUTWARD_ORDER:
+            ties = [t for t in found["ties"] if t["kind"] == kind]
+            if not ties:
+                continue
+            if kind == "registry":  # the long, ordinary part: names only
+                by_ecosystem: dict[str, list[str]] = {}
+                for tie in ties:
+                    by_ecosystem.setdefault(tie["ecosystem"], []).append(tie["name"])
+                lines += [f"  registry   {eco}: {', '.join(names)}" for eco, names in by_ecosystem.items()]
+            else:
+                lines += [f"  {kind:<10} {t['ecosystem']}: {t['name']}" + (f"  <- {t['detail']}" if t["detail"] else "")
+                          for t in ties]
+        lines += [f"  note: {note}" for note in found["notes"]]
+        return "\n".join(lines)
+
+    out.result(found | {"mermaid": diagram}, text=diagram.rstrip("\n") if args.format == "mermaid" else summary)
+    return 0
+
+
 def cmd_relations(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.code.relations import owner_relations, relations_mermaid
 
+    from pathlib import Path
+
+    if (Path(args.path).expanduser() / ".git").exists():
+        return _outward(args, config, out)
     relations = owner_relations(args.path)
     if not relations["repositories"]:
         out.note(f"no repositories directly inside {relations['folder']} (expected: a folder of clones, "
@@ -271,7 +378,7 @@ def cmd_score(args: argparse.Namespace, config: Config, out: Output) -> int:
     path = Path(args.path).expanduser().resolve()
     commits = read_history(path, args.max_commits or None)
     lanes = assign_lanes(commits, branch_tips(path))
-    notes = score.score_notes(commits)
+    notes = score.score_notes(commits, ignore=_ignorelist(args, out))
     folder = config.data_dir / "scores"
     band = args.contributors_band_mode
     members = score.band(notes) if band else None
@@ -379,8 +486,9 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     p = sub.add_parser("network", help="relations around a user: repositories, organizations, where forks come from")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")
-    p.add_argument("--format", choices=["summary", "mermaid", "dot"], default="summary",
-                   help="summary (default), a Mermaid diagram, or Graphviz DOT of everything")
+    p.add_argument("--format", choices=["summary", "mermaid", "mindmap", "dot"], default="summary",
+                   help="summary (default), a Mermaid flowchart, a Mermaid mindmap of the owner, or Graphviz DOT")
+    p.add_argument("--max-repos", type=int, default=10, help="mindmap: repositories shown per owner (most starred)")
     p.add_argument("--level", choices=["owners", "repos"], default="owners",
                    help="diagram zoom: owners (who forks from whom) or repositories grouped by owner")
     p.add_argument("--min-forks", type=int, default=1, help="owners level: draw fork flows of at least N")
@@ -397,7 +505,9 @@ def register(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser("analyze", help="what cloned repositories are made of: languages, structure, frameworks")
     p.add_argument("path", nargs="*", default=["."],
                    help="repositories, or folders of repositories such as ~/__WORKSHOP/forge/rattish (default: .)")
-    p.add_argument("--limit", type=int, default=8, help="languages listed per repository")
+    p.add_argument("--limit", type=int, default=8, help="languages listed per repository (pie: slices)")
+    p.add_argument("--format", choices=["summary", "pie"], default="summary",
+                   help="summary (default) or a Mermaid pie of the languages, all given repositories together")
     p.add_argument("--deep", action="store_true",
                    help="CaptorLex step 1: also functions, methods, classes per language (tree-sitter; code extra)")
     p.add_argument("--map-priv-repos", action="store_true",
@@ -426,8 +536,23 @@ def register(sub: argparse._SubParsersAction) -> None:
     add_output_flags(p, urls=False)  # --json: files, edges, most_used, cycles, external, mermaid
     p.set_defaults(func=cmd_imports)
 
-    p = sub.add_parser("relations", help="ties between the cloned repositories of one owner: submodules, dependencies")
-    p.add_argument("path", help="a folder of clones, e.g. ~/__WORKSHOP/forge/rattish")
+    p = sub.add_parser("contributors", help="who made a cloned repository: commits, lines, dates; AUTHORS text; pie")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["list", "authors", "pie"], default="list",
+                   help="list (default), the text of an AUTHORS file, or a Mermaid pie")
+    p.add_argument("--by", choices=["commits", "lines", "added"], default="commits", help="pie: what a slice measures")
+    p.add_argument("--top", type=int, default=12, help="pie: slices before the rest becomes 'others'")
+    p.add_argument("--max-commits", type=int, default=0, help="only the newest N commits (default: all)")
+    add_ignorelist_flag(p, "they are not listed, credited or drawn")
+    p.add_argument("--save", action="store_true",
+                   help="write data/contributors/<repository>.AUTHORS (pie: <repository>-<by>.md)")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_contributors)
+
+    p = sub.add_parser("relations", help="ties between an owner's cloned repositories (a folder of clones), or what "
+                                         "one repository holds on to outside itself (a clone)")
+    p.add_argument("path", help="a folder of clones, e.g. ~/__WORKSHOP/forge/rattish - or one repository")
+    p.add_argument("--offline", action="store_true", help="one repository: do not ask GitHub whether it is a fork")
     p.add_argument("--format", choices=["summary", "mermaid"], default="summary")
     p.add_argument("--all", action="store_true", help="mermaid: draw repositories without ties too")
     p.add_argument("--save", action="store_true", help="write the diagram to data/relations/<folder>.md")
@@ -442,6 +567,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--tempo", type=int, default=96, help="midi: quarter notes per minute")
     p.add_argument("--contributors-band-mode", action="store_true",
                    help="an instrument per contributor: the busiest plays guitar, then bass, piano, violin ...")
+    add_ignorelist_flag(p, "their commits are silent and they get no instrument")
     p.add_argument("--save", action="store_true", help="tab, abc: also write data/scores/<repository>.abc | .tab.txt")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_score)
