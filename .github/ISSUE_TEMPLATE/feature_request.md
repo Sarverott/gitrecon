@@ -15,7 +15,7 @@ The command, option or output you imagine. An example of the call and of the res
 
 **Where it belongs**
 [collecting (GitHub, feeds, archives) / mapping and diagrams / reading code (PeekerLex, CaptorLex) /
-reading text (humanish, translation) / the map dataset / services / docs / not sure]
+reading text (humanish, translation) / the map dataset / docs / not sure]
 
 **Alternatives you considered**
 Other tools or workarounds you tried.

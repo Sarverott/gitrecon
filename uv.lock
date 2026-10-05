@@ -1447,17 +1447,15 @@ wheels = [
 
 [[package]]
 name = "gitrecon"
-version = "0.8.0"
+version = "0.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "defusedxml" },
-    { name = "docker" },
     { name = "lark" },
     { name = "markdownify" },
     { name = "marko" },
     { name = "networkx" },
-    { name = "podman" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
@@ -1551,7 +1549,6 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "chromadb", marker = "extra == 'llm'", specifier = ">=1.5.5" },
     { name = "defusedxml", specifier = ">=0.7.1" },
-    { name = "docker", specifier = ">=7.1.0" },
     { name = "gitrecon", extras = ["hub", "llm", "net", "code", "translate", "math"], marker = "extra == 'all'" },
     { name = "huggingface-hub", marker = "extra == 'hub'", specifier = ">=1.7.2" },
     { name = "langchain", marker = "extra == 'llm'", specifier = ">=1.4.3" },
@@ -1564,7 +1561,6 @@ requires-dist = [
     { name = "ollama", marker = "extra == 'llm'", specifier = ">=0.6.1" },
     { name = "openai", marker = "extra == 'llm'", specifier = ">=2.29.0" },
     { name = "paramiko", marker = "extra == 'net'", specifier = ">=5.0.0" },
-    { name = "podman", specifier = ">=5.7.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "rich", specifier = ">=13.9.4" },

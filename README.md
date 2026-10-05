@@ -74,7 +74,7 @@ gitrecon score .                               # the history as guitar tablature
 gitrecon relations ~/__WORKSHOP/forge/rattish  # what ties an owner's repositories: submodules, dependencies
 gitrecon contributors . --ignorelist --format pie   # who made it, bots left out, as a Mermaid pie
 gitrecon network sarverott --format mindmap    # an owner at a glance
-gitrecon commit-files .                        # a plan of commits, one per changed file (--apply makes them)
+gitrecon save . --dry-run                      # the commit message `task save` would write
 gitrecon translate text --from en --to pl "hello"   # offline, after: gitrecon translate install en pl
 
 # look
@@ -230,14 +230,6 @@ class node_models,node_map,node_labeler,node_rules toneMint
 class node_digest,node_digest_inputs,node_llm,node_posts,node_text toneRose
 class node_atlas,node_namespace,node_hub,node_tui_parts,node_github_service,node_ollama,node_xai,node_hf_service toneIndigo
 ```
-
-Services around gitrecon - databases, gitea, ollama, n8n, traefik, runners and more - are
-docker compose files in `services/<group>/`, behind one gateway (traefik: every web service
-is `<name>.gr.rs-tech.online`, or `<name>.localhost:8880` on the host; a WireGuard bubble for the rest),
-started with their dependencies:
-`task services:list`, `task services:up -- gitea n8n`. Their data lives in
-`datasets/_dockdrives/<volume>` (`task services:drives`, `task services:backup`); see
-`docs/guides/environment.md`.
 
 ## Examples and documentation
 

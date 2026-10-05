@@ -55,7 +55,7 @@ gitrecon events org:github --watch --json | my-consumer   # JSON Lines, one even
 | `relations FOLDER` | `{name, repositories: [{name, origin, publishes}], edges: [{from, to, kind, detail}], outside_submodules, untied, mermaid}` | - |
 | `contributors [PATH]` | `[{name, emails, names, commits, merges, added, deleted, co_authored, first, last}]`; authors, pie: `{repository, format, text, contributors}` | - |
 | `relations REPOSITORY` | `{name, origin, ties: [{kind, ecosystem, name, detail}], registries, counts, notes, mermaid}` | - |
-| `commit-files [PATH]` | `[{path, status, old_path, message, by, answers, facts, note?}]`; with `--apply` also `committed`, `sha`, `error` | - |
+| `save [PATH]` | `{committed, message, sha, error}`; `--dry-run`: `{message, committed: false}` | - |
 | `score [PATH]` | `{repository, format, lanes, score, notes: [{sha, lane, string, frets, eighths, pitches, tag}]}`; midi: `{repository, notes, file}` | - |
 | `gitgraph [PATH]` | `{repository, lanes: {lane: commits}, commits: [{sha, parents, lane, time, author, subject, tags}]}` | - |
 | `label` | `[{name, target, confidence, evidence, details, url}]` | labeled entities |

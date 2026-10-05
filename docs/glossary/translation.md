@@ -19,4 +19,4 @@ needs the `translate` extra. CLI: `gitrecon translate languages [--available]`,
 
 ## Relations
 
-The same packages a LibreTranslate service would use ([[services]]).
+The same packages a LibreTranslate server would use.

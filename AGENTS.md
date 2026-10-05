@@ -30,8 +30,8 @@ src/gitrecon/
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
-├── committing/     a commit per changed file: changes, form, handlers (registry + path), plan
-├── llm/            PARKED: the Ollama interface and model-backed commit handler, commented out
+├── openapi.py      the commands and tasks as an OpenAPI document (generated contract)
+├── committing.py   `save`: one commit of everything, the message written from the changed paths
 ├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
 ├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
@@ -113,18 +113,22 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
   take the remote side and re-lock; version lines: keep the remote one.
 
-## Committing per file, and the parked model code
+## The interface as data
 
-- `gitrecon.committing`: `changes` / `form` / `handlers` / `plan`. A handler is
-  `handler(context: ChangeContext) -> dict | None`, registered with `@register("name")`; the
-  planner falls back to `path_handler` whenever a handler passes, raises or answers badly.
-  New ways of writing commit messages are new handlers - do not grow the planner.
-- `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the hooks do not stage everything or push
-  per file. Do not run `--apply` on the user's repository yourself: committing is theirs.
-- `src/gitrecon/llm/` is **parked** (the user's decision, 2026-10-05): the Ollama interface and
-  the model-backed handler are commented out, their tests skipped, the `llm` command gone.
-  Do not revive or extend it unasked. `gitrecon.digest.llm` (older HTTP client) is separate.
-- Importing commitizen disables existing loggers; `form._commitizen()` switches them back on.
+- `resources/openapi/gitrecon.openapi.yaml` is generated (`task openapi`, `gitrecon.openapi`)
+  from the argparse parser and the Taskfile: after adding or changing a command or its
+  options, run `task openapi` - `tests/test_openapi.py` fails otherwise. Never edit it by hand.
+  It is a contract for a future GUI; there is no HTTP server.
+- `resources/llms/` holds model-tooling configuration only (`litellm.yaml`). gitrecon does not
+  run a model server, pull models or start agents; the `services/` environment was removed
+  and belongs in a separate project.
+
+## Saving
+
+- `gitrecon.committing` is one small module: `changed_files`, `save_message` (a Conventional
+  Commit written from the changed paths), `save`. `task save` = `gitrecon save .`. The owner
+  runs it; do not commit for them.
+- Importing commitizen disables existing loggers - nothing in `src/` imports it any more; keep it so.
 
 ## Contributors and the ignorelist
 
@@ -192,33 +196,6 @@ Clone commands take an optional path; without one, clones go to the active works
   state, not the terminal (`tests/test_tui.py`).
 - The menu must degrade without Task, docs or examples (it runs in the container too).
 
-## Services (services/)
-
-- `services/<group>/<service>.compose.yaml`, one file per service, listed in the group's
-  `compose.yaml`; groups listed in `services/compose.yaml`, which the root `compose.yaml`
-  includes. Each group describes itself in `NOTE.md` (table: service, image, address, needs).
-- Every service has `profiles: [<group>, <service>]`; start through `services/control.py`
-  (`task services:up -- …`), which follows `depends_on` across groups. Databases are shared
-  (`databases/`); new apps get a database via `POSTGRES_MULTIPLE_DATABASES`.
-- Volumes are declared only in `services/volumes.compose.yaml`, each a bind of
-  `${REPO_DIR:-${PWD}}/datasets/_dockdrives/<volume>`; service files just mount them by name.
-  `control.py up` creates the folders; `drives` checks, `backup` archives (via a container,
-  since services own their folders). Engine queries use the docker/podman SDK; compose
-  stays the CLI (the SDKs have no compose).
-- No published ports (only traefik, wireguard, transmission peers). A web service gets
-  traefik labels: `Host(\`<sub>.${DOMAIN:-gr.rs-tech.online}\`) || Host(\`<sub>.localhost\`)`, its
-  container port, and `vpn-only@file` for admin tools. Public (tunnels) only with an explicit
-  router on entrypoint `public`. Everything else is reached by name inside the network or
-  through the WireGuard bubble (dnsmasq). Main domain `gr.rs-tech.online` is persistent.
-- Gateway setup lives in `services/networking/config/` (traefik static/dynamic, dnsmasq,
-  ngrok); fixed addresses: traefik 172.30.0.10, dnsmasq .53, wireguard .2 (automatic: .128+).
-- No `${VAR:?}` (one unset variable would break every compose command); defaults are dev
-  passwords; `task services:env` regenerates `services/.env.example`.
-- New service → its file, the group's `compose.yaml`, `NOTE.md`, its volumes in
-  `volumes.compose.yaml`, its traefik labels, and `task services:env`; check with `docker compose --profile '*' config -q`.
-- `app/` (not created yet, on purpose): the web interface, built later by others - do not
-  write there. First the environment, the CLI and the terminal interface.
-
 ## OpenSpec (being adopted)
 
 - `openspec/` holds specs (`specs/<capability>/spec.md`: what must hold) and changes
@@ -227,8 +204,7 @@ Clone commands take an optional path; without one, clones go to the active works
 - Project rules for OpenSpec artifacts are in `openspec/config.yaml` (context, per-artifact
   rules). Keep them in step with this file.
 - An existing capability gets its spec when a change first touches it: a `baseline-<name>`
-  change that records current behaviour (example: `baseline-per-file-commits`), then the real
-  change on top. Archiving a change is the owner's call.
+  change that records current behaviour, then the real change on top. Archiving a change is the owner's call.
 - Generated files (`.github/agents`, `.github/prompts/opsx-*`, `.github/skills/openspec-*`,
   `copilot-setup-steps.yml`) come from `openspec init` / `openspec update`: edit sparingly.
 

@@ -4,6 +4,18 @@ gitrecon follows the BOS [[craft-loop]].
 
 ## Committing
 
+The shortest way, with nothing to write:
+
+```sh
+task save          # one commit of everything that changed; the message is written for you
+```
+
+The message is made from the list of changed files (`chore: save 12 files (src 5, docs 4,
+tests 3)`, the files in the body). Hooks run as for any commit, and autopush pushes it.
+`gitrecon save . --dry-run` shows the message without committing.
+
+To word a commit yourself:
+
 ```sh
 task commit        # commitizen asks, writes a Conventional Commit
 ```
@@ -51,7 +63,7 @@ subjects.
 | `cz bump` | next version, changelog, tag - the loop does this, not you |
 | `cz info`, `cz example`, `cz schema` | the explanations you found |
 
-The form is also reachable from code - this is what the commit writer below builds on:
+The form is also reachable from code:
 
 ```python
 from commitizen import factory
@@ -62,22 +74,6 @@ cz.questions()            # the form: prefix, scope, subject, body, is_breaking_
 cz.message({"prefix": "feat", "scope": "cli", "subject": "add x", "body": "", "is_breaking_change": False, "footer": ""})
 cz.schema_pattern()       # the regular expression `cz check` uses
 ```
-
-## A commit per file
-
-```sh
-task commit:files                       # a plan: every changed file with a message; commits nothing
-task commit:files -- --apply            # make the commits, one per file
-task commit:files -- --limit 5
-```
-
-The messages come from a *handler* ([[commit-writer]]). The only one today is `path`: plain
-messages from where a file lives and what happened to it (`docs: update README.md`,
-`test(tests): add test_core.py`). Better handlers are written as functions and chosen with
-`--handler NAME`.
-
-> **Remember!** `--apply` does not push. With autopush on, the next ordinary commit pushes
-> the series; or `git push`.
 
 ## When the push is refused: merging the remote in
 
