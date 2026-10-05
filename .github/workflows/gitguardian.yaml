@@ -1,0 +1,30 @@
+name: GitGuardian scan
+
+# Looks for secrets (tokens, keys, passwords) in every pushed commit.
+# Needs the repository secret GITGUARDIAN_API_KEY (GitGuardian dashboard > API > Personal access tokens).
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  scanning:
+    name: GitGuardian scan
+    # pull requests from forks get no secrets: the scan could only fail there. Their commits
+    # are scanned when they reach a branch of this repository (the push event).
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # fetch all history so multiple commits can be scanned
+      - name: GitGuardian scan
+        uses: GitGuardian/ggshield/actions/secret@v1.55.0
+        env:
+          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
+          GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}

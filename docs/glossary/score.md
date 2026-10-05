@@ -17,12 +17,20 @@ The same commits-with-lanes the [[git-graph]] draws, read as a score:
 
 The same history always plays the same tune.
 
+**Band mode** (`--contributors-band-mode`) gives every contributor an instrument: whoever
+committed most plays the steel guitar, the next the bass, then electric piano, violin, flute,
+trumpet ... Everyone keeps the common time and rests while the others play. In MIDI that is
+one track per contributor, in ABC one voice, in the tab a line above the strings saying who
+plays each note.
+
 ## Where
 
 `gitrecon.mapping.score` (`score_notes`, `to_tab`, `to_abc`, `to_midi`). CLI:
-`gitrecon score [PATH] [--format tab|abc|midi] [--max-commits N] [--tempo N] [--save]`.
+`gitrecon score [PATH] [--format tab|abc|midi] [--contributors-band-mode] [--max-commits N] [--tempo N] [--save]`.
+Play a file with any MIDI player, e.g. `timidity data/scores/gitrecon.mid`.
 
-> **Remember!** `--format midi` always writes a file, `data/scores/<repository>.mid`;
+> **Remember!** `--format midi` always writes a file, `data/scores/<repository>.mid`
+> (`<repository>-band.mid` in band mode);
 > `--save` writes the tab or ABC next to it. Both are in gitrecon's data folder.
 
 ## Relations
