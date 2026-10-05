@@ -68,6 +68,8 @@ nav:
       - guides/examples.md
       - guides/environment.md
       - guides/collecting-activity.md
+      - guides/analysing-code.md
+      - guides/reading-text.md
       - guides/map-dataset.md
       - guides/writing-a-label-rule.md
       - guides/committing-and-releasing.md
@@ -76,6 +78,10 @@ nav:
       - devlog/scrapnote-1791014945204.md
       - devlog/scrapnote-1791134376269.md
       - devlog/scrapnote-1791136416826.md
+      - devlog/scrapnote-1791151005845.md
+      - devlog/scrapnote-1791154400474.md
+      - devlog/scrapnote-1791145526438.md
+      - devlog/scrapnote-1791156397474.md
   - Glossary:
       - glossary/README.md
       - Collecting:
@@ -94,6 +100,13 @@ nav:
           - glossary/entity.md
           - glossary/activity-graph.md
           - glossary/network.md
+          - glossary/git-graph.md
+          - glossary/score.md
+          - glossary/code-analysis.md
+          - glossary/peekerlex.md
+          - glossary/captorlex.md
+          - glossary/humanish.md
+          - glossary/translation.md
           - glossary/label.md
           - glossary/labeler.md
           - glossary/rule.md

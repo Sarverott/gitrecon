@@ -57,8 +57,23 @@ task docker:stop
 task docker:run -- menu                  # the interactive menu (commands and status)
 ```
 
-- The image is Python on Alpine with only the locked runtime dependencies and the `hub` extra
-  (~125 MB; `docker build --build-arg EXTRAS="" .` leaves the hub out: ~92 MB, no map push/pull).
+- The image is Python on Debian slim with git, `resources/` and the locked core dependencies
+  plus the `hub` extra (about 380 MB). Other extras: `docker build --build-arg EXTRAS="--all-extras" .`
+  (Debian rather than Alpine because the `llm` extra's chromadb has no Alpine build.)
+
+## Extras
+
+| Extra | Brings | For |
+| --- | --- | --- |
+| (core) | requests, rich, lark, pyyaml, bs4, markdownify, marko, defusedxml, networkx, docker, podman | everything gitrecon does today except the two below |
+| `hub` | huggingface-hub | `gitrecon atlas pull` / `push` |
+| `llm` | chromadb, langchain, litellm, nanobot, ollama, openai | language models: digests, later CaptorLex |
+| `net` | paramiko, scapy | network reconnaissance |
+| `code` | tree-sitter, tree-sitter-language-pack | `gitrecon analyze --deep` (CaptorLex) |
+| `translate` | argostranslate (brings torch, about 5 GB with its CUDA libraries) | `gitrecon translate` |
+| `all` | every extra above | |
+
+`task install` runs `uv sync --all-extras`; a lighter install is `uv sync --extra hub`.
 - `./data` and `./datasets` are mounted, so the [[raw-buffer]] and the [[atlas]] stay on the host,
   written as your user.
 - Tokens (`GITHUB_TOKEN`/`GH_TOKEN`, `HF_TOKEN`) come from the environment; the `docker:*` tasks

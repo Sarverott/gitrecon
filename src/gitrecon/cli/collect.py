@@ -139,7 +139,41 @@ def cmd_org_repos(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
-def _clone_listed(repos: list[dict], args: argparse.Namespace, out: Output, what: str) -> int:
+def _analyse_clones(results: list[dict], repos: list[dict], config: Config, out: Output,
+                    map_private: bool = False) -> None:
+    """Analyse what was cloned and keep it (raw buffer + map); a short ``analysis`` lands on each result."""
+    from gitrecon.code import analyze_repo
+    from gitrecon.code.store import save_analysis
+    from gitrecon.hub.huggingface import default_local_dir
+
+    analyses = []
+    for result in results:
+        if result["status"] == "failed":
+            continue
+        try:
+            analysis = analyze_repo(result["path"])
+        except Exception as error:  # noqa: BLE001 - analysis never fails a clone
+            out.note(f"analysis of {result['full_name']} failed: {error}")
+            continue
+        analyses.append(analysis)
+        result["analysis"] = {"files": analysis["files"], "main_language": analysis["main_language"],
+                              "frameworks": analysis["frameworks"]}
+    if analyses:
+        private = set() if map_private else {r["full_name"].lower() for r in repos if r.get("private")}
+        saved = save_analysis(analyses, config.raw_dir, default_local_dir(config), private=private)
+        out.note(f"analysed {saved['buffered']} (raw buffer: {config.raw_dir / 'analysis'}; "
+                 f"{len(saved['mapped'])} new or changed in the map) - skip with --no-analysis")
+
+
+def _clone_text(result: dict) -> str:
+    line = f"{result['status']:<8} {result['full_name']}" + (f"  {result['error']}" if result["error"] else "")
+    if analysis := result.get("analysis"):
+        tools = f"; {', '.join(analysis['frameworks'][:6])}" if analysis["frameworks"] else ""
+        line += f"  [{analysis['main_language'] or '-'}, {analysis['files']} files{tools}]"
+    return line
+
+
+def _clone_listed(repos: list[dict], args: argparse.Namespace, config: Config, out: Output, what: str) -> int:
     from gitrecon.sources.cloning import default_clone_path
     from gitrecon.sources.repos import clone_repos
 
@@ -158,7 +192,9 @@ def _clone_listed(repos: list[dict], args: argparse.Namespace, out: Output, what
     results = clone_repos(chosen, path, update=args.update, depth=args.depth,
                           progress=out.note if not out.machine else None)
     failed = [r for r in results if r["status"] == "failed"]
-    out.listing(results, text=lambda r: f"{r['status']:<8} {r['full_name']}" + (f"  {r['error']}" if r["error"] else ""),
+    if not args.no_analysis:
+        _analyse_clones(results, chosen, config, out, map_private=args.map_priv_repos)
+    out.listing(results, text=_clone_text,
                 data=lambda r: r, url=lambda r: f"https://github.com/{r['full_name']}",
                 summary=f"-- {len(results) - len(failed)} ok, {len(failed)} failed")
     return 1 if failed else 0
@@ -169,14 +205,14 @@ def cmd_repo_clone(args: argparse.Namespace, config: Config, out: Output) -> int
 
     repos = user_repos(args.user, _client(config), privacy=args.privacy, include_forks=not args.no_forks,
                        include_archived=not args.no_archived)
-    return _clone_listed(repos, args, out, args.user)
+    return _clone_listed(repos, args, config, out, args.user)
 
 
 def cmd_org_clone(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon.sources.repos import org_repos
 
     repos = org_repos(args.org, _client(config), include_forks=not args.no_forks, include_archived=not args.no_archived)
-    return _clone_listed(repos, args, out, args.org)
+    return _clone_listed(repos, args, config, out, args.org)
 
 
 def cmd_stars(args: argparse.Namespace, config: Config, out: Output) -> int:
@@ -366,6 +402,12 @@ def register(sub: argparse._SubParsersAction) -> None:
         p.add_argument("--depth", type=int, help="shallow clones, e.g. 1 = newest commit only (much smaller)")
         p.add_argument("--update", action="store_true", help="fast-forward clones that exist already")
         p.add_argument("--dry-run", action="store_true", help="list what would be cloned and its size, clone nothing")
+        p.add_argument("--no-analysis", action="store_true",
+                       help="only clone: by default every clone is analysed (languages, frameworks) and the "
+                            "result kept in the raw buffer and the map dataset")
+
+        p.add_argument("--map-priv-repos", action="store_true",
+                       help="write the analysis of private repositories to the map dataset too")
 
     p = sub.add_parser("repos", help="repositories a user owns")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")

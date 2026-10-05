@@ -64,6 +64,14 @@ def no_env_files(monkeypatch):
     monkeypatch.setattr("gitrecon.config.env_files", lambda: [])
 
 
+@pytest.fixture(autouse=True)
+def own_data_dirs(monkeypatch, tmp_path_factory):
+    """Commands that save by default never write into the real data folder or the real map."""
+    base = tmp_path_factory.mktemp("gitrecon")
+    monkeypatch.setenv("GITRECON_DATA", str(base / "data"))
+    monkeypatch.setenv("GITRECON_DATASETS", str(base / "datasets"))
+
+
 @pytest.fixture
 def t0() -> datetime:
     return T0
