@@ -1,3 +1,9 @@
+## v0.8.0 (2026-10-05)
+
+### Fix
+
+- **trying-to-make-automation-and-suite-for-llms-work-but-it-does-not**: required removal of implemented interfaces for llms, rebuild is needed
+
 ## v0.7.1 (2026-10-05)
 
 ### Feat
