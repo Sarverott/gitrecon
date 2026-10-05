@@ -18,6 +18,70 @@ On every commit the hooks:
 
 Work on `development`, or on `feature/<name>` / `fix/<name>` branches.
 
+## What commitizen is, in short
+
+A commit message here is a small form, and commitizen (`cz`) is the tool that asks it,
+checks it and later reads it back:
+
+```
+<type>(<scope>): <subject>          feat(cli): add the score command
+
+<body>                              why, in a sentence or two
+
+<footer>                            BREAKING CHANGE: ... / Refs #12
+```
+
+| Part | Meaning | Rule |
+| --- | --- | --- |
+| type | what kind of change | one of `feat fix docs style refactor perf test build ci` (`chore`, `bump`, `revert` also pass the check) |
+| scope | which part of the project | optional, one word - **no spaces**, which is why long scopes here are written-with-dashes |
+| subject | what changed | imperative, lower case, no full stop |
+| body, footer | why; issues; `BREAKING CHANGE: ...` | optional |
+
+What it is for: the *type* decides the next version when a release is cut - `fix`, `refactor`,
+`perf` raise the patch, `feat` the minor, a breaking change the major (this project's loop has
+its own, calmer policy in `.github/bos.config.json`) - and the changelog is built from the
+subjects.
+
+| Command | Does |
+| --- | --- |
+| `task commit` (`cz commit`) | asks the form, writes the commit |
+| `cz check --message "feat: x"` | says whether a message passes (the `commit-msg` hook does this) |
+| `cz commit --dry-run --write-message-to-file FILE` | asks the form and only writes the message to a file |
+| `cz bump` | next version, changelog, tag - the loop does this, not you |
+| `cz info`, `cz example`, `cz schema` | the explanations you found |
+
+The form is also reachable from code, which is how the commit writer below fills it in:
+
+```python
+from commitizen import factory
+from commitizen.config import read_cfg
+
+cz = factory.committer_factory(read_cfg())
+cz.questions()            # the form: prefix, scope, subject, body, is_breaking_change, footer
+cz.message({"prefix": "feat", "scope": "cli", "subject": "add x", "body": "", "is_breaking_change": False, "footer": ""})
+cz.schema_pattern()       # the regular expression `cz check` uses
+```
+
+## A commit per file, written by a local model
+
+```sh
+task commit:files                       # a plan: every changed file with a message; commits nothing
+task commit:files -- --apply            # make the commits, one per file
+task commit:files -- --model qwen2.5-coder:7b --limit 5
+task commit:files -- --no-model         # plain messages from the paths, no model
+```
+
+See [[commit-writer]]. It needs a running Ollama server with a model ([[llm]]):
+`gitrecon llm models`, `gitrecon llm pull deepseek-r1:1.5b`.
+
+> **Remember!** Read the plan before `--apply`. A small model on a CPU writes weak messages
+> (it guesses the type from little, and takes half a minute per file); the form guarantees
+> the *shape* of a message, not its truth. A bigger model writes better ones.
+
+> **Remember!** `--apply` does not push. With autopush on, the next ordinary commit pushes
+> the series; or `git push`.
+
 ## When the push is refused: merging the remote in
 
 Every release ends with `master` merged back into `development` on GitHub (the version bump
@@ -80,3 +144,9 @@ ignored.
 Every pass through `master`: version bump (patch, minor on a breaking change), changelog,
 `vX.Y.Z` tag, wheel and sdist attached to a GitHub Release, back-merge PR into
 `development`. Don't bump or tag by hand.
+
+`AUTHORS` is refreshed in the middle of a release: after `testing` was merged into
+`releasing` and before the pull request to `master` is opened, the loop runs
+`gitrecon contributors --ignorelist --format authors`, and commits the file to `releasing`
+when it changed (`scripts/delegated/workflow-gh/release/authors.sh`). Who is left out is in
+`resources/ignorelist.txt`.

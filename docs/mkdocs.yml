@@ -84,6 +84,8 @@ nav:
       - devlog/scrapnote-1791156397474.md
       - devlog/scrapnote-1791168729177.md
       - devlog/scrapnote-1791176132225.md
+      - devlog/scrapnote-1791179724179.md
+      - devlog/scrapnote-1791187496508.md
   - Glossary:
       - glossary/README.md
       - Collecting:
@@ -109,6 +111,8 @@ nav:
           - glossary/peekerlex.md
           - glossary/captorlex.md
           - glossary/humanish.md
+          - glossary/llm.md
+          - glossary/commit-writer.md
           - glossary/translation.md
           - glossary/label.md
           - glossary/labeler.md

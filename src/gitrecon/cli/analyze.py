@@ -54,6 +54,10 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
     name = lambda key: render._name(key, graph)  # noqa: E731
 
     def diagram() -> str:
+        if args.format == "mindmap":
+            user_key = next((k for k, node in graph.nodes.items()
+                             if node.kind == "user" and k.split(":", 1)[1] == args.user.lower()), f"user:{args.user.lower()}")
+            return render.owner_mindmap(graph, user_key, max_repos=args.max_repos)
         if args.level == "repos":
             return render.repos_mermaid(graph, max_nodes=args.max_nodes, forks_only=args.forks_only)
         return render.owners_mermaid(graph, min_forks=args.min_forks)
@@ -73,12 +77,16 @@ def cmd_network(args: argparse.Namespace, config: Config, out: Output) -> int:
             lines += ["", "not seen:"] + [f"  {note}" for note in graph.notes]
         return "\n".join(lines)
 
-    text = {"summary": summary, "mermaid": diagram, "dot": lambda: render.to_dot(graph)}[args.format]
+    text = {"summary": summary, "mermaid": diagram, "mindmap": diagram, "dot": lambda: render.to_dot(graph)}[args.format]
     if args.save:
         folder = config.data_dir / "networks"
         folder.mkdir(parents=True, exist_ok=True)
-        path = folder / f"{args.user}-{args.level}.md"
-        path.write_text(f"# Network of {args.user} ({args.level})\n\n```mermaid\n{diagram()}\n```\n", encoding="utf-8")
+        what = "mindmap" if args.format == "mindmap" else args.level
+        legend = ("\nShapes: a circle is the user, a square an organization, a rounded box a repository, "
+                  "a hexagon the repository a fork comes from.\n" if what == "mindmap" else "")
+        path = folder / f"{args.user}-{what}.md"
+        path.write_text(f"# Network of {args.user} ({what})\n{legend}\n```mermaid\n{diagram().rstrip()}\n```\n",
+                        encoding="utf-8")
         out.note(f"saved {path}")
     if graph.notes and args.format != "summary":
         for note in graph.notes:
@@ -478,8 +486,9 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     p = sub.add_parser("network", help="relations around a user: repositories, organizations, where forks come from")
     p.add_argument("user", help="GitHub nickname, e.g. sarverott")
-    p.add_argument("--format", choices=["summary", "mermaid", "dot"], default="summary",
-                   help="summary (default), a Mermaid diagram, or Graphviz DOT of everything")
+    p.add_argument("--format", choices=["summary", "mermaid", "mindmap", "dot"], default="summary",
+                   help="summary (default), a Mermaid flowchart, a Mermaid mindmap of the owner, or Graphviz DOT")
+    p.add_argument("--max-repos", type=int, default=10, help="mindmap: repositories shown per owner (most starred)")
     p.add_argument("--level", choices=["owners", "repos"], default="owners",
                    help="diagram zoom: owners (who forks from whom) or repositories grouped by owner")
     p.add_argument("--min-forks", type=int, default=1, help="owners level: draw fork flows of at least N")

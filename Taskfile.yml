@@ -63,6 +63,16 @@ tasks:
     cmds:
       - task: scripts:sync
 
+  commit:files:
+    desc: 'A commit per changed file, messages by a local model - a plan; task commit:files -- --apply commits'
+    cmds:
+      - uv run --quiet gitrecon commit-files . {{.CLI_ARGS}}
+
+  scrapnote:
+    desc: Start a scrapnote in docs/devlog/ named by the current moment (UNIXUSAT, milliseconds)
+    cmds:
+      - uv run --quiet python scripts/scrapnote.py {{.CLI_ARGS}}
+
   merge:check:
     desc: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
     cmds:
