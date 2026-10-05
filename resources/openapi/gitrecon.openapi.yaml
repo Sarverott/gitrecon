@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: gitrecon
-  version: 0.8.0
+  version: 0.8.1
   description: 'Exploring, mapping and labeling GitHub activity of users, organizations, repositories and projects
 
 
@@ -17,7 +17,6 @@ tags:
 - name: content
   description: content - text, commits, digests
 - name: 'task: project'
-- name: 'task: commit'
 - name: 'task: docker'
 - name: 'task: docs'
 - name: 'task: examples'
@@ -1620,13 +1619,13 @@ paths:
                 type: string
         '400':
           description: the command refused the arguments or failed
-  /commands/commit-files:
+  /commands/save:
     post:
-      operationId: command_commit_files
+      operationId: command_save
       tags:
       - content
-      summary: a commit per changed file, the messages by a handler (a plan by default; --apply commits)
-      x-cli: gitrecon commit-files [path]
+      summary: commit everything that changed as one commit; the message is written for you
+      x-cli: gitrecon save [path]
       requestBody:
         content:
           application/json:
@@ -1637,22 +1636,9 @@ paths:
                   type: string
                   description: 'the repository (default: the current folder)'
                   default: .
-                handler:
-                  type: string
-                  enum:
-                  - path
-                  description: 'who writes the messages (gitrecon.committing.handlers); path: from where the file
-                    lives'
-                  default: path
-                limit:
-                  type: integer
-                  description: only the first N files of the order
-                single:
+                dry_run:
                   type: boolean
-                  description: one commit for everything, its message written from the list of changed files
-                apply:
-                  type: boolean
-                  description: make the commits (hooks run for each; nothing is staged besides the file; no push)
+                  description: show the message, commit nothing
                 output:
                   type: string
                   enum:
@@ -1958,30 +1944,6 @@ paths:
       - 'task: project'
       summary: Run the offline test suite and the metadata sync check
       x-cli: task test -- <args>
-      responses:
-        '200':
-          description: the task's output
-          content:
-            text/plain:
-              schema:
-                type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                args:
-                  type: string
-                  description: what follows `--` on the command line
-              additionalProperties: false
-  /tasks/commit:files:
-    post:
-      operationId: task_commit_files
-      tags:
-      - 'task: commit'
-      summary: A commit per changed file, messages by a handler - a plan; task commit:files -- --apply commits
-      x-cli: task commit:files -- <args>
       responses:
         '200':
           description: the task's output

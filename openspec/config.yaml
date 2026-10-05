@@ -19,14 +19,14 @@ context: |
     the function that needs them.
   - Every listing command takes --json (and --urls when items have pages); in those modes standard
     output is data only. Commands that save write into the data folder, never into the repository read.
-  - src/gitrecon/llm/ is parked (commented out) by decision: do not revive or extend it unasked.
+  - gitrecon runs no model server, pulls no models and starts no agents; resources/llms/ is configuration only.
   - app/ does not exist on purpose; resources/locales/ and resources/rss.json are the owner's drafts.
   - Do not build profiles of private individuals; respect GitHub rate limits.
 
 rules:
   proposal:
     - State what is out of scope.
-    - Name capabilities after behaviour a user relies on (e.g. per-file-commits), not after modules.
+    - Name capabilities after behaviour a user relies on (e.g. owner-network), not after modules.
   specs:
     - Describe observable behaviour of commands and files written; no function or class names.
     - Every requirement that concerns a command says what happens in --json mode when it differs.

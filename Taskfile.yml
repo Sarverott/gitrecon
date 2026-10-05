@@ -65,12 +65,7 @@ tasks:
   save:
     desc: Commit everything that changed as one commit - the message is written for you (hooks run, autopush applies)
     cmds:
-      - uv run --quiet gitrecon commit-files . --single --apply
-
-  commit:files:
-    desc: 'A commit per changed file, messages by a handler - a plan; task commit:files -- --apply commits'
-    cmds:
-      - uv run --quiet gitrecon commit-files . {{.CLI_ARGS}}
+      - uv run --quiet gitrecon save .
 
   openapi:
     desc: Regenerate resources/openapi/gitrecon.openapi.yaml from the commands and this Taskfile

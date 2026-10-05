@@ -111,8 +111,6 @@ nav:
           - glossary/peekerlex.md
           - glossary/captorlex.md
           - glossary/humanish.md
-          - glossary/llm.md
-          - glossary/commit-writer.md
           - glossary/translation.md
           - glossary/label.md
           - glossary/labeler.md

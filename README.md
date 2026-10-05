@@ -74,7 +74,7 @@ gitrecon score .                               # the history as guitar tablature
 gitrecon relations ~/__WORKSHOP/forge/rattish  # what ties an owner's repositories: submodules, dependencies
 gitrecon contributors . --ignorelist --format pie   # who made it, bots left out, as a Mermaid pie
 gitrecon network sarverott --format mindmap    # an owner at a glance
-gitrecon commit-files .                        # a plan of commits, one per changed file (--apply makes them)
+gitrecon save . --dry-run                      # the commit message `task save` would write
 gitrecon translate text --from en --to pl "hello"   # offline, after: gitrecon translate install en pl
 
 # look

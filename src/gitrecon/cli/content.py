@@ -106,37 +106,6 @@ def cmd_text(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
-# PARKED (2026-10-05) with gitrecon/llm/: the `llm` command (models, pull, ask).
-#
-# def cmd_llm(args: argparse.Namespace, config: Config, out: Output) -> int:
-#     import sys
-#
-#     from gitrecon.llm import Ollama
-#
-#     llm = Ollama(model=args.model) if args.model else Ollama()
-#     try:
-#         match args.action:
-#             case "models":
-#                 out.listing(llm.models(), text=lambda name: name, data=lambda name: name, url=lambda name: None,
-#                             summary=lambda found: f"-- {len(found)} models at {llm.host}"
-#                                                   + ("" if found else "; get one: gitrecon llm pull deepseek-r1:1.5b"))
-#             case "pull":
-#                 if len(args.words) != 1:
-#                     out.note("usage: gitrecon llm pull MODEL   (e.g. deepseek-r1:1.5b)")
-#                     return 2
-#                 out.note(f"pulling {args.words[0]} into {llm.host} (models are large: this can take minutes)")
-#                 out.result({"model": args.words[0], "status": llm.pull(args.words[0])},
-#                            text=lambda: f"{args.words[0]}: ready")
-#             case "ask":
-#                 prompt = sys.stdin.read() if args.words in ([], ["-"]) else " ".join(args.words)
-#                 answer = llm.chat(prompt)
-#                 out.result({"host": llm.host, "model": llm.model, "prompt": prompt, "answer": answer}, text=answer)
-#     except RuntimeError as error:
-#         out.note(str(error))
-#         return 1
-#     return 0
-
-
 def cmd_openapi(args: argparse.Namespace, config: Config, out: Output) -> int:
     import yaml
 
@@ -148,48 +117,22 @@ def cmd_openapi(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
-def cmd_commit_files(args: argparse.Namespace, config: Config, out: Output) -> int:
+def cmd_save(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon import committing
 
     repo = Path(args.path).expanduser().resolve()
-    if args.single:
-        message = committing.save_message(repo)
-        if message is None:
-            out.note("nothing changed: nothing to save")
-            return 0
-        if not args.apply:
-            out.result({"message": message, "committed": False}, text=message)
-            out.note("-- one commit with this message; nothing was committed (--apply does it)")
-            return 0
-        done = committing.save(repo)
-        out.result(done, text=f"saved as {done['sha']}: {message.splitlines()[0]}" if done["committed"]
-                   else f"NOT saved - the commit was refused:\n{done['error']}")
-        return 0 if done["committed"] else 1
-    plan = committing.plan_commits(repo, handler=args.handler, limit=args.limit,
-                                   progress=out.note if args.handler != "path" and not out.machine else None)
-    if not plan:
-        out.note("nothing changed: no commits to make")
+    message = committing.save_message(repo)
+    if message is None:
+        out.note("nothing changed: nothing to save")
         return 0
-    if args.apply:
-        plan = committing.apply_plan(repo, plan, progress=out.note if not out.machine else None)
-
-    def text(step: dict) -> str:
-        head, _, rest = step["message"].partition("\n\n")
-        state = "" if "committed" not in step else (f"  [{step['sha']}]" if step["committed"] else "  [FAILED]")
-        lines = [f"{step['status']:<9} {step['path']}{state}", f"    {head}"]
-        lines += [f"    | {line}" for line in rest.splitlines() if line]
-        if step.get("note"):
-            lines.append(f"    (written by the path handler: {step['note']})")
-        if step.get("error"):
-            lines.append(f"    error: {step['error']}")
-        return "\n".join(lines)
-
-    failed = any(step.get("committed") is False for step in plan)
-    out.listing(plan, text=text, data=lambda step: step, url=lambda step: None,
-                summary=(f"-- {sum(bool(s.get('committed')) for s in plan)} of {len(plan)} committed"
-                         + ("; stopped at the first failure, the rest is untouched" if failed else "; not pushed: git push")
-                         if args.apply else f"-- a plan of {len(plan)} commits; nothing was committed (--apply does it)"))
-    return 1 if failed else 0
+    if args.dry_run:
+        out.result({"message": message, "committed": False}, text=message)
+        out.note("-- one commit with this message; nothing was committed")
+        return 0
+    done = committing.save(repo)
+    out.result(done, text=f"saved as {done['sha']}: {message.splitlines()[0]}" if done["committed"]
+               else f"NOT saved - the commit was refused:\n{done['error']}")
+    return 0 if done["committed"] else 1
 
 
 def cmd_translate(args: argparse.Namespace, config: Config, out: Output) -> int:
@@ -264,28 +207,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_translate, rest="words")
 
-    # PARKED (2026-10-05) with gitrecon/llm/:
-    # p = sub.add_parser("llm", help="the local model server (Ollama): models, pull, ask")
-    # p.add_argument("action", choices=["models", "pull", "ask"])
-    # p.add_argument("words", nargs="*", help="pull: the model name; ask: the prompt (or - for stdin)")
-    # p.add_argument("--model", help="ask: the model (default: $OLLAMA_MODEL, else the server's first)")
-    # add_output_flags(p, urls=False)
-    # p.set_defaults(func=cmd_llm, rest="words")
-
-    from gitrecon.committing import HANDLERS
-
-    p = sub.add_parser("commit-files", help="a commit per changed file, the messages by a handler "
-                                            "(a plan by default; --apply commits)")
+    p = sub.add_parser("save", help="commit everything that changed as one commit; the message is written for you")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
-    p.add_argument("--handler", choices=sorted(HANDLERS), default="path",
-                   help="who writes the messages (gitrecon.committing.handlers); path: from where the file lives")
-    p.add_argument("--limit", type=int, help="only the first N files of the order")
-    p.add_argument("--single", action="store_true",
-                   help="one commit for everything, its message written from the list of changed files")
-    p.add_argument("--apply", action="store_true",
-                   help="make the commits (hooks run for each; nothing is staged besides the file; no push)")
+    p.add_argument("--dry-run", action="store_true", help="show the message, commit nothing")
     add_output_flags(p, urls=False)
-    p.set_defaults(func=cmd_commit_files)
+    p.set_defaults(func=cmd_save)
 
     p = sub.add_parser("openapi", help="gitrecon's commands and tasks as one OpenAPI document (generated)")
     p.add_argument("--format", choices=["yaml", "json"], default="yaml")

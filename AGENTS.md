@@ -31,8 +31,7 @@ src/gitrecon/
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
 ├── openapi.py      the commands and tasks as an OpenAPI document (generated contract)
-├── committing/     a commit per changed file: changes, form, handlers (registry + path), plan
-├── llm/            PARKED: the Ollama interface and model-backed commit handler, commented out
+├── committing.py   `save`: one commit of everything, the message written from the changed paths
 ├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
 ├── translate/      argos — offline translation (translate extra)
 ├── atlas/          the map dataset: layout (paths), deterministic updates (update),
@@ -123,20 +122,13 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 - `resources/llms/` holds model-tooling configuration only (`litellm.yaml`). gitrecon does not
   run a model server, pull models or start agents; the `services/` environment was removed
   and belongs in a separate project.
-- `task save` = `gitrecon commit-files . --single --apply`: one commit, message from the paths.
 
-## Committing per file, and the parked model code
+## Saving
 
-- `gitrecon.committing`: `changes` / `form` / `handlers` / `plan`. A handler is
-  `handler(context: ChangeContext) -> dict | None`, registered with `@register("name")`; the
-  planner falls back to `path_handler` whenever a handler passes, raises or answers badly.
-  New ways of writing commit messages are new handlers - do not grow the planner.
-- `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the hooks do not stage everything or push
-  per file. Do not run `--apply` on the user's repository yourself: committing is theirs.
-- `src/gitrecon/llm/` is **parked** (the user's decision, 2026-10-05): the Ollama interface and
-  the model-backed handler are commented out, their tests skipped, the `llm` command gone.
-  Do not revive or extend it unasked. `gitrecon.digest.llm` (older HTTP client) is separate.
-- Importing commitizen disables existing loggers; `form._commitizen()` switches them back on.
+- `gitrecon.committing` is one small module: `changed_files`, `save_message` (a Conventional
+  Commit written from the changed paths), `save`. `task save` = `gitrecon save .`. The owner
+  runs it; do not commit for them.
+- Importing commitizen disables existing loggers - nothing in `src/` imports it any more; keep it so.
 
 ## Contributors and the ignorelist
 
@@ -212,8 +204,7 @@ Clone commands take an optional path; without one, clones go to the active works
 - Project rules for OpenSpec artifacts are in `openspec/config.yaml` (context, per-artifact
   rules). Keep them in step with this file.
 - An existing capability gets its spec when a change first touches it: a `baseline-<name>`
-  change that records current behaviour (example: `baseline-per-file-commits`), then the real
-  change on top. Archiving a change is the owner's call.
+  change that records current behaviour, then the real change on top. Archiving a change is the owner's call.
 - Generated files (`.github/agents`, `.github/prompts/opsx-*`, `.github/skills/openspec-*`,
   `copilot-setup-steps.yml`) come from `openspec init` / `openspec update`: edit sparingly.
 

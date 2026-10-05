@@ -42,8 +42,6 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [PeekerLex](peekerlex.md) | The quick, light reading of code: enough to know what a repository is made of. |
 | [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Steps 1 and 2 (one repository, one owner) built.* |
 | [OpenAPI document](openapi.md) | Everything gitrecon can be asked to do, as one generated OpenAPI file. |
-| [Commit writer](commit-writer.md) | A commit per changed file; who writes the messages is a handler. |
-| [LLM interface](llm.md) | *Parked.* An interface to local language models through Ollama - tried, set aside. |
 | [Humanish](humanish.md) | Human text read by grammar: sentences that follow rules become records. |
 | [Translation](translation.md) | Offline translation with Argos Translate, the engine inside LibreTranslate. |
 | [Score](score.md) | A repository's history as music: guitar tablature, ABC notation, a MIDI file. |
