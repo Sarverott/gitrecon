@@ -1,3 +1,13 @@
+## v0.7.1 (2026-10-05)
+
+### Feat
+
+- **working-on-automations-and-severity,-drafting-ideas**: added ignorelist, added contributors listing, working on automation
+
+### Fix
+
+- **fixing-conflict-by-merge**: implementing prototype of autonomous descriptor of commits
+
 ## v0.7.0 (2026-10-05)
 
 ### BREAKING CHANGE
