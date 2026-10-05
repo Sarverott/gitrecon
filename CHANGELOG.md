@@ -1,3 +1,22 @@
+## v0.6.0 (2026-10-05)
+
+### BREAKING CHANGE
+
+- universal translation added, commit reading added, PeekerLex and CaptorLex implemented
+
+### Feat
+
+- **now-git-repository-can-be-played-on-guitar...-because-why-not,-it-came-naturally-by-inspecting-how-looks-commits-on-branches-across-full-story-of-repo**: play me nice software production process
+- **adding-lexical-handling,-adding-git-history-handling**: make amazing story from git log, change repo branching into canvas with growing tree on it, form sentences back from encoded by logic algorithmic processes
+
+### Fix
+
+- **making-lex-more-stron**: go charisard
+
+### Perf
+
+- **humanish-blumms,-commit-analizer-and-universal-translator-was-been-implemented**: anti-babel tower, small steps method, switches for all ocassion, mass controll included
+
 ## v0.5.2 (2026-10-04)
 
 ## v0.5.1 (2026-10-04)
