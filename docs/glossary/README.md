@@ -40,7 +40,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Entity](entity.md) | Anything gitrecon can map, with a kind and a stable key. |
 | [Code analysis](code-analysis.md) | What a cloned repository is made of: languages, code and comment lines, names, links, Python structure, frameworks. |
 | [PeekerLex](peekerlex.md) | The quick, light reading of code: enough to know what a repository is made of. |
-| [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Steps 1 and 2 (one repository) built.* |
+| [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Steps 1 and 2 (one repository, one owner) built.* |
 | [Humanish](humanish.md) | Human text read by grammar: sentences that follow rules become records. |
 | [Translation](translation.md) | Offline translation with Argos Translate, the engine inside LibreTranslate. |
 | [Score](score.md) | A repository's history as music: guitar tablature, ABC notation, a MIDI file. |

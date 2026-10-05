@@ -49,6 +49,14 @@ re-locked). The usual real conflict is the `version` line of `pyproject.toml`,
 > **Remember!** To avoid it: `task merge:remote` before starting work after a release went
 > through the loop.
 
+## Commits made on GitHub's pages
+
+A commit made in the browser carries GitHub's wording, not a Conventional Commit, and then
+fails the message check of every pull request it travels in. Saving issue templates from
+the repository settings does that ("Update issue templates"); that one wording is allowed
+(`allowed_prefixes` in `pyproject.toml`). For anything else edited in the browser, write the
+message yourself: `docs: ...`, `ci: ...`.
+
 ## The loop
 
 ```
@@ -59,7 +67,13 @@ feature/*, fix/*  →  development  →  revision  →  testing  →  releasing 
 ```
 
 Pull requests to the next stage open automatically; `task gh:loop` shows which steps merge
-on their own. Checks: commit messages, metadata sync, tests.
+on their own. Checks: commit messages, metadata sync, tests; apart from them GitGuardian scans
+every push for secrets (`.github/workflows/gitguardian.yaml`, secret `GITGUARDIAN_API_KEY`).
+
+A loop pull request shows two runs of the checks: the one the loop starts itself (the one
+that counts and merges), and one GitHub creates for the pull request event. The second
+belongs to the bot, waits for approval ("action required") or ends without jobs - it can be
+ignored.
 
 ## Releases
 

@@ -226,6 +226,42 @@ def cmd_imports(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_relations(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from gitrecon.code.relations import owner_relations, relations_mermaid
+
+    relations = owner_relations(args.path)
+    if not relations["repositories"]:
+        out.note(f"no repositories directly inside {relations['folder']} (expected: a folder of clones, "
+                 "such as ~/__WORKSHOP/forge/<owner>)")
+        return 2
+    mermaid = relations_mermaid(relations, show_untied=args.all)
+
+    def summary() -> str:
+        edges = relations["edges"]
+        lines = [f"{relations['name']}: {len(relations['repositories'])} repositories, "
+                 f"{sum(e['kind'] == 'submodule' for e in edges)} submodule ties, "
+                 f"{sum(e['kind'] == 'dependency' for e in edges)} dependency ties between them"]
+        lines += [f"  {e['kind']:<10} {e['from']} -> {e['to']}  ({e['detail']})" for e in edges]
+        outside = relations["outside_submodules"]
+        if outside:
+            lines.append(f"  submodules from outside the folder: {len(outside)}")
+            lines += [f"    {m['from']}: {m['path']} <- {m['url']}" for m in outside[:20]]
+        lines.append(f"  untied: {len(relations['untied'])}"
+                     + (f" ({', '.join(relations['untied'][:12])}{' ...' if len(relations['untied']) > 12 else ''})"
+                        if relations["untied"] else ""))
+        return "\n".join(lines)
+
+    out.result(relations | {"mermaid": mermaid}, text=mermaid.rstrip("\n") if args.format == "mermaid" else summary)
+    if args.save:
+        folder = config.data_dir / "relations"
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{relations['name']}.md"
+        target.write_text(f"# Ties between the repositories in {relations['name']}\n\n```mermaid\n{mermaid}```\n",
+                          encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
 def cmd_score(args: argparse.Namespace, config: Config, out: Output) -> int:
     from pathlib import Path
 
@@ -237,20 +273,26 @@ def cmd_score(args: argparse.Namespace, config: Config, out: Output) -> int:
     lanes = assign_lanes(commits, branch_tips(path))
     notes = score.score_notes(commits)
     folder = config.data_dir / "scores"
+    band = args.contributors_band_mode
+    members = score.band(notes) if band else None
+    suffix = "-band" if band else ""
     if args.format == "midi":
         folder.mkdir(parents=True, exist_ok=True)
-        target = folder / f"{path.name}.mid"
-        target.write_bytes(score.to_midi(notes, tempo=args.tempo))
-        out.result({"repository": path.name, "notes": len(notes), "file": str(target)},
-                   text=f"{path.name}: {len(notes)} notes on {min(len(lanes), 6)} strings -> {target}")
+        target = folder / f"{path.name}{suffix}.mid"
+        target.write_bytes(score.to_midi(notes, tempo=args.tempo, band_mode=band))
+        played = (f"{len(members)} contributors: " + ", ".join(f"{m['author']} ({m['instrument']})" for m in members[:8])
+                  if band else f"{min(len(lanes), 6)} strings")
+        out.result({"repository": path.name, "notes": len(notes), "file": str(target), "band": members},
+                   text=f"{path.name}: {len(notes)} notes, {played} -> {target}")
         return 0
-    text = score.to_tab(notes) if args.format == "tab" else score.to_abc(notes, title=path.name)
-    out.result({"repository": path.name, "format": args.format, "lanes": lanes, "score": text,
+    text = (score.to_tab(notes, band_mode=band) if args.format == "tab"
+            else score.to_abc(notes, title=path.name, band_mode=band))
+    out.result({"repository": path.name, "format": args.format, "lanes": lanes, "band": members, "score": text,
                 "notes": [{"sha": n.sha, "lane": n.lane, "string": n.string, "frets": n.frets, "eighths": n.eighths,
-                           "pitches": n.pitches, "tag": n.tag} for n in notes]}, text=text.rstrip("\n"))
+                           "pitches": n.pitches, "tag": n.tag, "author": n.author} for n in notes]}, text=text.rstrip("\n"))
     if args.save:
         folder.mkdir(parents=True, exist_ok=True)
-        target = folder / f"{path.name}.{'abc' if args.format == 'abc' else 'tab.txt'}"
+        target = folder / f"{path.name}{suffix}.{'abc' if args.format == 'abc' else 'tab.txt'}"
         target.write_text(text, encoding="utf-8")
         out.note(f"saved {target}")
     return 0
@@ -364,7 +406,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--no-save", action="store_true",
                    help="only print: by default results go to the raw buffer and the map dataset")
     add_output_flags(p)  # --json: the full analysis; --urls: links found in code and comments
-    p.set_defaults(func=cmd_analyze)
+    p.set_defaults(func=cmd_analyze, rest="path", rest_default=["."])
 
     p = sub.add_parser("commits", help="a cloned repository's commit messages read as records: types, scopes, labels")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
@@ -384,12 +426,22 @@ def register(sub: argparse._SubParsersAction) -> None:
     add_output_flags(p, urls=False)  # --json: files, edges, most_used, cycles, external, mermaid
     p.set_defaults(func=cmd_imports)
 
+    p = sub.add_parser("relations", help="ties between the cloned repositories of one owner: submodules, dependencies")
+    p.add_argument("path", help="a folder of clones, e.g. ~/__WORKSHOP/forge/rattish")
+    p.add_argument("--format", choices=["summary", "mermaid"], default="summary")
+    p.add_argument("--all", action="store_true", help="mermaid: draw repositories without ties too")
+    p.add_argument("--save", action="store_true", help="write the diagram to data/relations/<folder>.md")
+    add_output_flags(p, urls=False)  # --json: repositories, edges, outside_submodules, untied, mermaid
+    p.set_defaults(func=cmd_relations)
+
     p = sub.add_parser("score", help="a cloned repository's history as music: guitar tab, ABC notation or MIDI")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
     p.add_argument("--format", choices=["tab", "abc", "midi"], default="tab",
                    help="tab (default), abc, or midi - written to data/scores/<repository>.mid")
     p.add_argument("--max-commits", type=int, default=64, help="play the newest N commits (0: all)")
     p.add_argument("--tempo", type=int, default=96, help="midi: quarter notes per minute")
+    p.add_argument("--contributors-band-mode", action="store_true",
+                   help="an instrument per contributor: the busiest plays guitar, then bass, piano, violin ...")
     p.add_argument("--save", action="store_true", help="tab, abc: also write data/scores/<repository>.abc | .tab.txt")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_score)

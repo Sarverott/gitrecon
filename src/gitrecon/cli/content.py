@@ -176,4 +176,4 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--to", help="text: target language code, e.g. pl")
     p.add_argument("--available", action="store_true", help="languages: what the Argos index offers, not what is installed")
     add_output_flags(p, urls=False)
-    p.set_defaults(func=cmd_translate)
+    p.set_defaults(func=cmd_translate, rest="words")
