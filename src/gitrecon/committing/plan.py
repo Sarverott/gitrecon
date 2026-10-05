@@ -82,3 +82,44 @@ def apply_plan(repo: str | Path, plan: list[dict[str, Any]], progress: Any = Non
             _git(root, "reset", "-q", "--", *paths, check=False)  # leave the file changed but unstaged
             break
     return done
+
+
+def save_message(repo: str | Path) -> str | None:
+    """One message for everything that changed, written from the paths alone; ``None`` when nothing changed.
+
+    The type is what all files agree on (``docs``, ``test``, ``ci``, ``build``), else ``chore``;
+    the subject counts the files per top folder; the body lists them.
+    """
+    root = Path(repo).expanduser()
+    changes = changed_files(root)
+    if not changes:
+        return None
+    context = lambda change: ChangeContext(root, change)  # noqa: E731
+    kinds = {path_handler(context(change))["prefix"] for change in changes}
+    areas: dict[str, int] = {}
+    for change in changes:
+        top = change.path.split("/")[0] if "/" in change.path else "root"
+        areas[top] = areas.get(top, 0) + 1
+    where = ", ".join(f"{name} {count}" for name, count in sorted(areas.items(), key=lambda kv: (-kv[1], kv[0]))[:3])
+    if len(areas) > 3:
+        where += ", ..."
+    files = "file" if len(changes) == 1 else "files"
+    body = "\n".join(f"{change.status}: {change.path}" for change in sorted(changes, key=lambda c: c.path)[:80])
+    if len(changes) > 80:
+        body += f"\n... and {len(changes) - 80} more"
+    return build_message({"prefix": kinds.pop() if len(kinds) == 1 else "chore",
+                          "subject": f"save {len(changes)} {files} ({where})", "body": body})
+
+
+def save(repo: str | Path) -> dict[str, Any]:
+    """Commit everything that changed as one commit with :func:`save_message`. Hooks and routines run as usual."""
+    root = Path(repo).expanduser()
+    message = save_message(root)
+    if message is None:
+        return {"committed": False, "message": None, "error": None}
+    _git(root, "add", "-A")
+    result = _git(root, "commit", "-m", message, check=False)
+    ok = result.returncode == 0
+    return {"committed": ok, "message": message, "sha": _git(root, "rev-parse", "--short", "HEAD").stdout.strip() if ok else None,
+            "error": None if ok else (result.stderr.strip() or result.stdout.strip())[-800:],
+            "hooks": (result.stdout + result.stderr).strip()[-400:] if ok else None}

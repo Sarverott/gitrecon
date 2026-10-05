@@ -231,14 +231,6 @@ class node_digest,node_digest_inputs,node_llm,node_posts,node_text toneRose
 class node_atlas,node_namespace,node_hub,node_tui_parts,node_github_service,node_ollama,node_xai,node_hf_service toneIndigo
 ```
 
-Services around gitrecon - databases, gitea, ollama, n8n, traefik, runners and more - are
-docker compose files in `services/<group>/`, behind one gateway (traefik: every web service
-is `<name>.gr.rs-tech.online`, or `<name>.localhost:8880` on the host; a WireGuard bubble for the rest),
-started with their dependencies:
-`task services:list`, `task services:up -- gitea n8n`. Their data lives in
-`datasets/_dockdrives/<volume>` (`task services:drives`, `task services:backup`); see
-`docs/guides/environment.md`.
-
 ## Examples and documentation
 
 - `examples/<title>/` - runnable Jupyter notebooks with concrete calls (`task examples:list`,

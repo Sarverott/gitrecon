@@ -137,10 +137,34 @@ def cmd_text(args: argparse.Namespace, config: Config, out: Output) -> int:
 #     return 0
 
 
+def cmd_openapi(args: argparse.Namespace, config: Config, out: Output) -> int:
+    import yaml
+
+    from gitrecon.openapi import build
+
+    document = build()
+    print(dumps(document) if args.format == "json" else yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=110),
+          end="")
+    return 0
+
+
 def cmd_commit_files(args: argparse.Namespace, config: Config, out: Output) -> int:
     from gitrecon import committing
 
     repo = Path(args.path).expanduser().resolve()
+    if args.single:
+        message = committing.save_message(repo)
+        if message is None:
+            out.note("nothing changed: nothing to save")
+            return 0
+        if not args.apply:
+            out.result({"message": message, "committed": False}, text=message)
+            out.note("-- one commit with this message; nothing was committed (--apply does it)")
+            return 0
+        done = committing.save(repo)
+        out.result(done, text=f"saved as {done['sha']}: {message.splitlines()[0]}" if done["committed"]
+                   else f"NOT saved - the commit was refused:\n{done['error']}")
+        return 0 if done["committed"] else 1
     plan = committing.plan_commits(repo, handler=args.handler, limit=args.limit,
                                    progress=out.note if args.handler != "path" and not out.machine else None)
     if not plan:
@@ -256,7 +280,13 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--handler", choices=sorted(HANDLERS), default="path",
                    help="who writes the messages (gitrecon.committing.handlers); path: from where the file lives")
     p.add_argument("--limit", type=int, help="only the first N files of the order")
+    p.add_argument("--single", action="store_true",
+                   help="one commit for everything, its message written from the list of changed files")
     p.add_argument("--apply", action="store_true",
                    help="make the commits (hooks run for each; nothing is staged besides the file; no push)")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_commit_files)
+
+    p = sub.add_parser("openapi", help="gitrecon's commands and tasks as one OpenAPI document (generated)")
+    p.add_argument("--format", choices=["yaml", "json"], default="yaml")
+    p.set_defaults(func=cmd_openapi)

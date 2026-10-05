@@ -4,6 +4,18 @@ gitrecon follows the BOS [[craft-loop]].
 
 ## Committing
 
+The shortest way, with nothing to write:
+
+```sh
+task save          # one commit of everything that changed; the message is written for you
+```
+
+The message is made from the list of changed files (`chore: save 12 files (src 5, docs 4,
+tests 3)`, the files in the body). Hooks run as for any commit, and autopush pushes it.
+`gitrecon commit-files . --single` shows the message without committing.
+
+To word a commit yourself:
+
 ```sh
 task commit        # commitizen asks, writes a Conventional Commit
 ```

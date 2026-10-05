@@ -157,3 +157,18 @@ def test_commitizen_does_not_silence_our_loggers():
     committing.commit_types()
     build_message({"prefix": "feat", "subject": "x"})
     assert not ours.disabled
+
+
+def test_save_is_one_commit_with_a_message_from_the_paths(repo, capsys):
+    root, git = repo
+    message = committing.save_message(root)
+    assert message.splitlines()[0] == "chore: save 5 files (pkg 2, root 2, tests 1)"
+    assert "modified: pkg/core.py" in message and "deleted: old.txt" in message
+    assert main(["commit-files", str(root), "--single"]) == 0               # shows the message, commits nothing
+    assert git("log", "--oneline").count("\n") == 1
+    assert main(["commit-files", str(root), "--single", "--apply"]) == 0
+    assert "saved as " in capsys.readouterr().out
+    assert git("log", "-1", "--format=%s").strip() == "chore: save 5 files (pkg 2, root 2, tests 1)"
+    assert git("status", "--porcelain") == "" and committing.save_message(root) is None
+    (root / "README.md").write_text("# proj\n\nmore\n")
+    assert committing.save_message(root).splitlines()[0] == "docs: save 1 file (root 1)"    # all files agree: docs

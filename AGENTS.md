@@ -30,6 +30,7 @@ src/gitrecon/
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
+├── openapi.py      the commands and tasks as an OpenAPI document (generated contract)
 ├── committing/     a commit per changed file: changes, form, handlers (registry + path), plan
 ├── llm/            PARKED: the Ollama interface and model-backed commit handler, commented out
 ├── humanish/       controlled sentences by grammar: commits (forms, types, labels), requirements
@@ -113,6 +114,17 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
   take the remote side and re-lock; version lines: keep the remote one.
 
+## The interface as data
+
+- `resources/openapi/gitrecon.openapi.yaml` is generated (`task openapi`, `gitrecon.openapi`)
+  from the argparse parser and the Taskfile: after adding or changing a command or its
+  options, run `task openapi` - `tests/test_openapi.py` fails otherwise. Never edit it by hand.
+  It is a contract for a future GUI; there is no HTTP server.
+- `resources/llms/` holds model-tooling configuration only (`litellm.yaml`). gitrecon does not
+  run a model server, pull models or start agents; the `services/` environment was removed
+  and belongs in a separate project.
+- `task save` = `gitrecon commit-files . --single --apply`: one commit, message from the paths.
+
 ## Committing per file, and the parked model code
 
 - `gitrecon.committing`: `changes` / `form` / `handlers` / `plan`. A handler is
@@ -191,33 +203,6 @@ Clone commands take an optional path; without one, clones go to the active works
 - Widgets keep state apart from drawing (`handle(key)` / `render()` / `run()`): test the
   state, not the terminal (`tests/test_tui.py`).
 - The menu must degrade without Task, docs or examples (it runs in the container too).
-
-## Services (services/)
-
-- `services/<group>/<service>.compose.yaml`, one file per service, listed in the group's
-  `compose.yaml`; groups listed in `services/compose.yaml`, which the root `compose.yaml`
-  includes. Each group describes itself in `NOTE.md` (table: service, image, address, needs).
-- Every service has `profiles: [<group>, <service>]`; start through `services/control.py`
-  (`task services:up -- …`), which follows `depends_on` across groups. Databases are shared
-  (`databases/`); new apps get a database via `POSTGRES_MULTIPLE_DATABASES`.
-- Volumes are declared only in `services/volumes.compose.yaml`, each a bind of
-  `${REPO_DIR:-${PWD}}/datasets/_dockdrives/<volume>`; service files just mount them by name.
-  `control.py up` creates the folders; `drives` checks, `backup` archives (via a container,
-  since services own their folders). Engine queries use the docker/podman SDK; compose
-  stays the CLI (the SDKs have no compose).
-- No published ports (only traefik, wireguard, transmission peers). A web service gets
-  traefik labels: `Host(\`<sub>.${DOMAIN:-gr.rs-tech.online}\`) || Host(\`<sub>.localhost\`)`, its
-  container port, and `vpn-only@file` for admin tools. Public (tunnels) only with an explicit
-  router on entrypoint `public`. Everything else is reached by name inside the network or
-  through the WireGuard bubble (dnsmasq). Main domain `gr.rs-tech.online` is persistent.
-- Gateway setup lives in `services/networking/config/` (traefik static/dynamic, dnsmasq,
-  ngrok); fixed addresses: traefik 172.30.0.10, dnsmasq .53, wireguard .2 (automatic: .128+).
-- No `${VAR:?}` (one unset variable would break every compose command); defaults are dev
-  passwords; `task services:env` regenerates `services/.env.example`.
-- New service → its file, the group's `compose.yaml`, `NOTE.md`, its volumes in
-  `volumes.compose.yaml`, its traefik labels, and `task services:env`; check with `docker compose --profile '*' config -q`.
-- `app/` (not created yet, on purpose): the web interface, built later by others - do not
-  write there. First the environment, the CLI and the terminal interface.
 
 ## OpenSpec (being adopted)
 

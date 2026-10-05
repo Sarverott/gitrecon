@@ -7,15 +7,7 @@
 #
 # Tokens are passed from the environment; the docker:* tasks load .env and the forge .env.
 
-# The services around gitrecon (databases, internals, automations, networking, runners)
-# live in services/<group>/<service>.compose.yaml, pulled in below. All of them sit behind
-# profiles: `task services:list` shows them, `task services:up -- <group|service>` starts
-# them with their dependencies. The web interface (app/) comes later.
-
 name: gitrecon
-
-include:
-  - services/compose.yaml
 
 x-gitrecon: &gitrecon
   build: .
@@ -28,16 +20,6 @@ x-gitrecon: &gitrecon
   volumes:
     - ./data:/data
     - ./datasets:/datasets
-
-# One network for the whole project, with fixed addresses for the gateway pieces
-# (traefik .10, dnsmasq .53, wireguard .2); automatic addresses come from .128-.254 only.
-networks:
-  default:
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24
-          ip_range: 172.30.0.128/25
-          gateway: 172.30.0.1
 
 services:
   gitrecon:
