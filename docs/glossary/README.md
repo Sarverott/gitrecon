@@ -41,8 +41,7 @@ collect ──► raw buffer ──► activity graph ──► labels
 | [Code analysis](code-analysis.md) | What a cloned repository is made of: languages, code and comment lines, names, links, Python structure, frameworks. |
 | [PeekerLex](peekerlex.md) | The quick, light reading of code: enough to know what a repository is made of. |
 | [CaptorLex](captorlex.md) | The deep reading of code: structure first, then meaning, reasoning and sense. *Steps 1 and 2 (one repository, one owner) built.* |
-| [Commit writer](commit-writer.md) | A commit per changed file; who writes the messages is a handler. |
-| [LLM interface](llm.md) | *Parked.* An interface to local language models through Ollama - tried, set aside. |
+| [OpenAPI document](openapi.md) | Everything gitrecon can be asked to do, as one generated OpenAPI file. |
 | [Humanish](humanish.md) | Human text read by grammar: sentences that follow rules become records. |
 | [Translation](translation.md) | Offline translation with Argos Translate, the engine inside LibreTranslate. |
 | [Score](score.md) | A repository's history as music: guitar tablature, ABC notation, a MIDI file. |
@@ -93,8 +92,6 @@ collect ──► raw buffer ──► activity graph ──► labels
 
 | Element | One line |
 | --- | --- |
-| [Gateway](gateway.md) | Traefik as the only way in: every web service is `<name>.gr.rs-tech.online`, nothing else publishes a port. |
-| [Services](services.md) | The environment around gitrecon: docker compose services in five groups, started with their dependencies. |
 
 ## Delivery
 

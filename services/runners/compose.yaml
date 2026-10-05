@@ -1,7 +1,0 @@
-# Runners: CI runners, scheduled jobs, webhook-triggered jobs and a message bus between them.
-include:
-  - ./github-runner.compose.yaml
-  - ./gitea-runner.compose.yaml
-  - ./scheduler.compose.yaml
-  - ./webhook.compose.yaml
-  - ./nats.compose.yaml

@@ -9,7 +9,6 @@ includes:
   hooks: ./.husky/Taskfile.yml
   examples: ./examples/Taskfile.yml
   docs: ./docs/Taskfile.yml
-  services: ./services/Taskfile.yml
 
 tasks:
   default:
@@ -63,10 +62,16 @@ tasks:
     cmds:
       - task: scripts:sync
 
-  commit:files:
-    desc: 'A commit per changed file, messages by a handler - a plan; task commit:files -- --apply commits'
+  save:
+    desc: Commit everything that changed as one commit - the message is written for you (hooks run, autopush applies)
     cmds:
-      - uv run --quiet gitrecon commit-files . {{.CLI_ARGS}}
+      - uv run --quiet gitrecon save .
+
+  openapi:
+    desc: Regenerate resources/openapi/gitrecon.openapi.yaml from the commands and this Taskfile
+    cmds:
+      - mkdir -p resources/openapi
+      - uv run --quiet gitrecon openapi > resources/openapi/gitrecon.openapi.yaml
 
   scrapnote:
     desc: Start a scrapnote in docs/devlog/ named by the current moment (UNIXUSAT, milliseconds)

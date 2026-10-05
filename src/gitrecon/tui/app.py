@@ -324,13 +324,6 @@ class MenuApp:
             parts.append(Panel(Text(", ".join(f"{k} {n}" for k, n in kinds.most_common())),
                                title="[section]link catalog[/section]", border_style="grey37"))
 
-        drives = self.root / "datasets" / "_dockdrives"
-        if drives.is_dir():
-            folders = sorted(p.name for p in drives.iterdir() if p.is_dir())
-            parts.append(Panel(Text(", ".join(folders) or "none yet", style="default" if folders else "muted"),
-                               title=f"[section]service volumes · datasets/_dockdrives ({len(folders)})[/section]",
-                               border_style="grey37"))
-
         local_map = self.config.datasets_dir / "imperialmap"
         if local_map.is_dir():
             areas = Table("area", "files", box=None, header_style="section")
