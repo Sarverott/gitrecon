@@ -1,3 +1,3 @@
 """gitrecon - exploring, mapping and labeling GitHub activity."""
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"

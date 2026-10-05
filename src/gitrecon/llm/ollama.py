@@ -76,7 +76,7 @@ class Ollama:
         return [m.model if hasattr(m, "model") else m["model"] for m in entries]
 
     def pick_model(self, model: str | None = None) -> str:
-        """The model to use: the one asked for, the configured one, else the server's first."""
+        """The model to use: the one asked for, the configured one, else the server's first that can chat."""
         chosen = model or self.model
         if chosen:
             return chosen
@@ -84,7 +84,8 @@ class Ollama:
         if not available:
             raise RuntimeError(f"the Ollama server at {self.host} has no models: gitrecon llm pull MODEL "
                                "(e.g. deepseek-r1:1.5b), or ollama pull MODEL")
-        self.model = available[0]
+        talking = [name for name in available if "embed" not in name.lower()]  # an embedding model cannot chat
+        self.model = (talking or available)[0]
         return self.model
 
     def pull(self, model: str) -> str:

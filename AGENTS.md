@@ -121,7 +121,8 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 - Reasoning models think whatever `think=False` says (deepseek-r1): give them room
   (`num_predict`), and expect seconds to minutes per answer on a CPU.
 - `gitrecon.llm.commit_writer`: a commit per changed file; the form is commitizen's own
-  (`cz.questions()` / `cz.message()`). `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the
+  (`cz.questions()` / `cz.message()`); the prompt carries `file_facts` (language, lines, imports,
+  used-by); `--reader MODEL` puts a note-taking model before the writer. `--apply` sets `BOS_SKIP_ROUTINES=add-all,push` so the
   hooks do not stage everything or push per file. Do not run `--apply` on the user's
   repository yourself: committing is theirs.
 - The OpenAI-compatible side (`digest/llm.py` TODO) is still open.

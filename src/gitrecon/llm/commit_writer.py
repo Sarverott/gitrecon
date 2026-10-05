@@ -8,6 +8,11 @@ body, breaking change, footer) become the fields of ``CommitForm``, and commitiz
 answers into the message - so what a person gets from ``task commit`` and what the model
 writes have the same shape and pass the same check.
 
+Two models can share the work (``reader=``): a small reasoning model first reads everything
+known about the file - what gitrecon's own readers say (language, lines changed, what it
+imports, who uses it) and the diff - and writes notes; the writer then fills the form from
+the notes. One model alone gets the same facts and the diff directly.
+
 Order: files other changed files import come first (the import graph of
 ``gitrecon.code.imports``), so every commit stands on what was committed before it; then
 code, then tests, then everything else.
@@ -206,6 +211,73 @@ def order_changes(repo: str | Path, changes: list[Change]) -> list[Change]:
     return sorted(changes, key=lambda c: (_rank(c.path), depth[c.path], c.path))
 
 
+# --- what is known about a file before any model reads it ------------------------------------
+
+
+def file_facts(repo: str | Path, change: Change, graph: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Facts gitrecon's own readers have about a changed file: language, size of the change, relations."""
+    from gitrecon.code.languages import detect
+
+    root = Path(repo).expanduser()
+    language = detect(Path(change.path))
+    facts: dict[str, Any] = {"path": change.path, "status": change.status,
+                             "language": language.name if language else None,
+                             "kind": language.kind if language else None}
+    stat = _git(root, "diff", "HEAD", "--numstat", "--", change.path, check=False).stdout.split()
+    if len(stat) >= 2 and stat[0].isdigit() and stat[1].isdigit():
+        facts["lines_added"], facts["lines_deleted"] = int(stat[0]), int(stat[1])
+    elif change.status == "added":
+        try:
+            facts["lines_added"] = len((root / change.path).read_text(encoding="utf-8", errors="replace").splitlines())
+        except OSError:
+            pass
+    if graph:
+        facts["imports"] = sorted(target for source, target in graph["edges"] if source == change.path)[:12]
+        users = sorted(source for source, target in graph["edges"] if target == change.path)
+        facts["used_by"] = len(users)
+        facts["used_by_examples"] = users[:5]
+    return facts
+
+
+def _facts_text(facts: dict[str, Any]) -> str:
+    lines = [f"File: {facts['path']}", f"What happened: {facts['status']}"]
+    if facts.get("language"):
+        lines.append(f"Language: {facts['language']} ({facts['kind']})")
+    if "lines_added" in facts:
+        lines.append(f"Lines: +{facts['lines_added']} -{facts.get('lines_deleted', 0)}")
+    if facts.get("imports"):
+        lines.append("It uses these files of the project: " + ", ".join(facts["imports"]))
+    if facts.get("used_by"):
+        lines.append(f"It is used by {facts['used_by']} file(s) of the project, e.g. " + ", ".join(facts["used_by_examples"]))
+    return "\n".join(lines)
+
+
+READER_SYSTEM = """You read one changed file of a software project and take notes for the person who will write
+its commit message. Say only what the facts and the diff show.
+- summary: one sentence - what this change does.
+- changes: the separate things that changed, each a short phrase (at most five).
+- kind: the type of change (feat = new capability, fix = defect repaired, docs, style, refactor, perf, test,
+  build, ci, chore).
+- reason: why the change was made, if the diff shows it; else empty."""
+
+
+def change_notes() -> type:
+    """The shape of the reader's notes (a pydantic model)."""
+    from typing import Literal
+
+    from pydantic import BaseModel
+
+    kinds = tuple(dict.fromkeys(commit_types()))
+
+    class ChangeNotes(BaseModel):
+        summary: str
+        changes: list[str] = []
+        kind: Literal[kinds]  # type: ignore[valid-type]
+        reason: str = ""
+
+    return ChangeNotes
+
+
 # --- the plan ----------------------------------------------------------------------------------
 
 
@@ -223,28 +295,61 @@ def fallback_answers(change: Change) -> dict[str, Any]:
             "is_breaking_change": False, "footer": ""}
 
 
-def write_message(repo: str | Path, change: Change, llm: Any, model: str | None = None) -> dict[str, Any]:
-    """``{"path", "status", "message", "by", "answers"}`` for one file; ``by`` is the model, or ``fallback``."""
+def write_message(repo: str | Path, change: Change, llm: Any, model: str | None = None, reader: str | None = None,
+                  graph: dict[str, Any] | None = None) -> dict[str, Any]:
+    """``{"path", "status", "message", "by", "answers", "facts", "notes"}`` for one file.
+
+    ``by`` is the model that wrote the message, or ``fallback``. With ``reader`` (a model name)
+    that model reads the facts and the diff first; the writer works from its notes.
+    """
     hint = fallback_answers(change)
-    prompt = (f"File: {change.path}\nWhat happened: {change.status}"
-              + (f" (was {change.old_path})" if change.old_path else "")
-              + f"\nA guess from the path alone: type {hint['prefix']}, scope {hint['scope'] or '(none)'}\n\n"
-              f"The change:\n{file_diff(repo, change)}")
+    facts = file_facts(repo, change, graph)
+    known = (_facts_text(facts) + (f"\nIt was called: {change.old_path}" if change.old_path else "")
+             # "chore" is only the fallback's shrug: saying it would talk the model out of feat and fix
+             + (f"\nJudging by where the file lives, the type is probably: {hint['prefix']}" if hint["prefix"] != "chore" else "")
+             + (f"\nA likely scope: {hint['scope']}" if hint["scope"] else ""))
+    diff = file_diff(repo, change)
+    room = {"num_predict": 1500}  # room for a reasoning model that thinks whatever it is told
+    notes = None
+    if reader:
+        try:
+            notes = llm.structured(change_notes(), f"{known}\n\nThe change:\n{diff}", model=reader,
+                                   system=READER_SYSTEM, options=room).model_dump()
+        except Exception:  # noqa: BLE001 - without notes the writer reads the diff itself
+            notes = None
+    if notes:
+        listed = "\n".join(f"- {item}" for item in notes["changes"])
+        prompt = (f"{known}\n\nNotes of a reader who studied the change:\nSummary: {notes['summary']}\n"
+                  f"Changes:\n{listed}\nKind, as the reader sees it: {notes['kind']}\nReason: {notes['reason'] or '(not shown)'}"
+                  f"\n\nThe beginning of the change itself:\n{diff[:1200]}")
+    else:
+        prompt = f"{known}\n\nThe change:\n{diff}"
     try:
-        form = llm.structured(commit_form(), prompt, model=model, system=SYSTEM, options={"num_predict": 1500})  # room for a reasoning model that thinks anyway
+        form = llm.structured(commit_form(), prompt, model=model, system=SYSTEM, options=room)
         answers = form.model_dump()
-        message, by = build_message(answers), llm.model
+        message, by = build_message(answers), model or llm.model
     except Exception as error:  # noqa: BLE001 - a model that fails must not stop the commit plan
         answers, by = hint | {"note": str(error)[:200]}, "fallback"
         message = build_message(hint)
     return {"path": change.path, "status": change.status, "old_path": change.old_path, "message": message, "by": by,
-            "answers": answers}
+            "answers": answers, "facts": facts, "notes": notes}
 
 
 def plan_commits(repo: str | Path, llm: Any = None, model: str | None = None, limit: int | None = None,
-                 progress: Any = None) -> list[dict[str, Any]]:
-    """The plan: every changed file in commit order with its message. ``llm=None``: fallback messages only."""
+                 progress: Any = None, reader: str | None = None) -> list[dict[str, Any]]:
+    """The plan: every changed file in commit order with its message. ``llm=None``: fallback messages only.
+
+    ``reader``: a second model that reads each file first and hands notes to the writer.
+    """
     changes = order_changes(repo, changed_files(repo))[: limit or None]
+    graph = None
+    if llm is not None:
+        try:
+            from gitrecon.code.imports import import_graph
+
+            graph = import_graph(repo, untracked=True)
+        except Exception:  # noqa: BLE001 - relations are an extra for the prompt
+            graph = None
     plan = []
     for change in changes:
         if progress:
@@ -254,7 +359,7 @@ def plan_commits(repo: str | Path, llm: Any = None, model: str | None = None, li
                          "message": build_message(fallback_answers(change)), "by": "fallback",
                          "answers": fallback_answers(change)})
         else:
-            plan.append(write_message(repo, change, llm, model))
+            plan.append(write_message(repo, change, llm, model, reader=reader, graph=graph))
     return plan
 
 
