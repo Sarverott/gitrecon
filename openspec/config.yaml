@@ -1,0 +1,49 @@
+schema: spec-driven
+githubCopilot:
+  cloudAgent: true
+
+# Project context: constraints an agent cannot infer by reading the code.
+# The agent guide (AGENTS.md) describes the codebase; this holds only the rules of the work.
+context: |
+  gitrecon is a Python (>= 3.12) command-line tool managed with uv and Task. Read AGENTS.md first.
+  - Work on `development` or `feature/*` / `fix/*`; never on `master`. A release is made only by the
+    branch loop (development -> revision -> testing -> releasing -> master); never bump or tag by hand.
+  - Commit messages are Conventional Commits and are checked on every commit of a pull request:
+    `type(scope): subject`, the scope without spaces. A non-conforming commit blocks the whole loop.
+  - The owner commits and pushes. Do not commit, push, publish the map dataset or posts unless asked.
+  - Tests are offline: no real network, no real model server, no real token (tests/conftest.py enforces it).
+    CI runs them on Python 3.12.3 without optional extras - a test needing an extra must skip itself.
+  - Knowledge is data: languages, frameworks, grammars, import patterns, ignore lists live in resources/.
+    A new language or framework is an edit there, not code.
+  - Core dependencies stay light; heavy libraries go into an optional extra and are imported inside
+    the function that needs them.
+  - Every listing command takes --json (and --urls when items have pages); in those modes standard
+    output is data only. Commands that save write into the data folder, never into the repository read.
+  - src/gitrecon/llm/ is parked (commented out) by decision: do not revive or extend it unasked.
+  - app/ does not exist on purpose; resources/locales/ and resources/rss.json are the owner's drafts.
+  - Do not build profiles of private individuals; respect GitHub rate limits.
+
+rules:
+  proposal:
+    - State what is out of scope.
+    - Name capabilities after behaviour a user relies on (e.g. per-file-commits), not after modules.
+  specs:
+    - Describe observable behaviour of commands and files written; no function or class names.
+    - Every requirement that concerns a command says what happens in --json mode when it differs.
+  design:
+    - Record decisions with the alternative that was not taken and why.
+  tasks:
+    - End with a verification group - tests for every scenario, then `task test`, `task lint`, `task docs:build`.
+    - Include the documentation a change needs - glossary page, guide, AGENTS.md, docs/guides/integration.md for output shapes.
+    - Do not include committing, pushing or releasing as tasks.
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+operations:
+  apply:
+    guidance:
+      - Leave the changes uncommitted; report what was verified and what was not.
+  archive:
+    guidance:
+      - Archive only after the owner confirms; say which main specs changed.
