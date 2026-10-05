@@ -147,7 +147,8 @@ def cmd_commit_files(args: argparse.Namespace, config: Config, out: Output) -> i
         except RuntimeError as error:
             out.note(f"{error}\n(--no-model writes plain messages from the file paths instead)")
             return 1
-    plan = commit_writer.plan_commits(repo, llm, limit=args.limit, progress=out.note if not out.machine else None)
+    plan = commit_writer.plan_commits(repo, llm, model=args.model, limit=args.limit, reader=args.reader,
+                                      progress=out.note if not out.machine else None)
     if not plan:
         out.note("nothing changed: no commits to make")
         return 0
@@ -159,6 +160,9 @@ def cmd_commit_files(args: argparse.Namespace, config: Config, out: Output) -> i
         state = "" if "committed" not in step else (f"  [{step['sha']}]" if step["committed"] else "  [FAILED]")
         lines = [f"{step['status']:<9} {step['path']}{state}", f"    {head}"]
         lines += [f"    | {line}" for line in rest.splitlines() if line]
+        if args.notes and step.get("notes"):
+            lines.append(f"    reader: [{step['notes']['kind']}] {step['notes']['summary']}")
+            lines += [f"      - {item}" for item in step["notes"]["changes"]]
         if step["by"] == "fallback" and llm is not None:
             lines.append("    (the model's answer was not usable: message written from the path)")
         if step.get("error"):
@@ -256,6 +260,10 @@ def register(sub: argparse._SubParsersAction) -> None:
                                             "(a plan by default; --apply commits)")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
     p.add_argument("--model", help="the Ollama model (default: $OLLAMA_MODEL, else the server's first)")
+    p.add_argument("--reader", metavar="MODEL",
+                   help="a second model that reads each file first (facts, diff) and hands notes to the writer, "
+                        "e.g. --reader deepseek-r1:1.5b --model qwen2.5-coder:7b")
+    p.add_argument("--notes", action="store_true", help="with --reader: show the reader's notes in the plan")
     p.add_argument("--no-model", action="store_true", help="plain messages from the file paths, no model")
     p.add_argument("--limit", type=int, help="only the first N files of the order")
     p.add_argument("--apply", action="store_true",
