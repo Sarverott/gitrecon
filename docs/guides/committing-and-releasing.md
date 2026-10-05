@@ -69,15 +69,18 @@ cz.schema_pattern()       # the regular expression `cz check` uses
 task commit:files                       # a plan: every changed file with a message; commits nothing
 task commit:files -- --apply            # make the commits, one per file
 task commit:files -- --model qwen2.5-coder:7b --limit 5
+task commit:files -- --reader deepseek-r1:1.5b --model qwen2.5-coder:7b --notes   # a reader model first
 task commit:files -- --no-model         # plain messages from the paths, no model
 ```
 
 See [[commit-writer]]. It needs a running Ollama server with a model ([[llm]]):
 `gitrecon llm models`, `gitrecon llm pull deepseek-r1:1.5b`.
 
-> **Remember!** Read the plan before `--apply`. A small model on a CPU writes weak messages
-> (it guesses the type from little, and takes half a minute per file); the form guarantees
-> the *shape* of a message, not its truth. A bigger model writes better ones.
+> **Remember!** Read the plan before `--apply`: the form guarantees the *shape* of a message,
+> not its truth. Measured here on a CPU, nine files: `qwen2.5-coder:7b` alone - about 20
+> seconds a file, messages that say what changed; `deepseek-r1:1.5b` alone - 30 seconds a file,
+> right shape and little content; the small one as reader for the big one - 40 seconds a file
+> and worse than the big one alone, because the reader's mistakes are passed on.
 
 > **Remember!** `--apply` does not push. With autopush on, the next ordinary commit pushes
 > the series; or `git push`.
