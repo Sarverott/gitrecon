@@ -63,6 +63,16 @@ tasks:
     cmds:
       - task: scripts:sync
 
+  merge:check:
+    desc: Compare the branch with its remote version - how far apart, would a merge conflict (changes nothing)
+    cmds:
+      - task: scripts:merge:check
+
+  merge:remote:
+    desc: Bring the remote version of the branch in (after "push rejected") - fast-forward or merge; never pushes
+    cmds:
+      - task: scripts:merge:remote
+
   commit:
     desc: Commit with commitizen (conventional message prompt); routines from .husky/bos.config.json apply
     interactive: true

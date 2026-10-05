@@ -8,6 +8,9 @@ gitrecon analyze PATH --urls                      # links found in code and comm
 gitrecon analyze PATH --deep                      # CaptorLex step 1: functions, methods, classes per language
 gitrecon analyze PATH --no-save                   # only print, keep nothing
 gitrecon commits PATH                             # its commit messages as records and labels
+gitrecon imports PATH                             # which file uses which (CaptorLex step 2)
+gitrecon imports PATH --format mermaid --save     # the same as a diagram of folders (--level file: of files)
+gitrecon score PATH                               # its history as guitar tablature (--format abc | midi)
 gitrecon gitgraph PATH --format mermaid --save    # its history as a Mermaid gitGraph
 ```
 
@@ -41,6 +44,16 @@ The reading done by default is [[peekerlex]]: quick and light. `--deep` adds the
 [[captorlex]]: what each file defines, through tree-sitter (the `code` extra; a language's
 grammar is downloaded the first time it is met).
 
+## Which file uses which
+
+`gitrecon imports` reads every import inside the repository and reports the files used most,
+the files using most, imports between folders, cycles (files that need each other in a ring),
+files connected to nothing, and what is used from outside (libraries). Python is read exactly;
+JavaScript, TypeScript, Vue, Svelte, C, C++, PHP (with composer's PSR-4 map), Ruby, shell and
+CSS by the patterns in `resources/imports.yml`.
+
+> **Remember!** `--save` writes `data/imports/<repository>-<level>.md`, in gitrecon's data folder.
+
 ## Teaching it more
 
 Everything it knows is in `resources/` - no code changes needed for:
@@ -52,6 +65,7 @@ Everything it knows is in `resources/` - no code changes needed for:
 | a framework known by its package | `resources/frameworks.yml` → `packages:` under its ecosystem |
 | a tool known by a file | `resources/frameworks.yml` → `files:` (a glob from the repository root) |
 | a dependency file | `resources/frameworks.yml` → `manifests:` (a reader from `gitrecon.code.frameworks`) |
+| how a language names the files it uses | `resources/imports.yml` (patterns, how a target becomes a file) |
 | deep reading for a language | `resources/languages.yml` -> `structure:` (a tree-sitter grammar name) |
 | a language family | `resources/grammars/lexical/<family>.lark` with `COMMENT`, `STRING`, `NUMBER`, `NAME`, `OTHER` + a `families:` entry |
 

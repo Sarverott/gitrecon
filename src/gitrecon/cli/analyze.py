@@ -188,6 +188,74 @@ def cmd_commits(args: argparse.Namespace, config: Config, out: Output) -> int:
     return 0
 
 
+def cmd_imports(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.code.imports import folder_edges, import_graph, imports_mermaid
+
+    graph = import_graph(Path(args.path).expanduser())
+    mermaid = imports_mermaid(graph, level=args.level, depth=args.depth, max_nodes=args.max_nodes)
+
+    def summary() -> str:
+        lines = [f"{graph['name']}: {len(graph['files'])} files read "
+                 f"({', '.join(f'{n} {name}' for name, n in graph['languages'].items()) or 'none'}), "
+                 f"{len(graph['edges'])} imports between them",
+                 "  most used:"]
+        lines += [f"    {m['used_by']:>4}  {m['file']}" for m in graph["most_used"][: args.limit]] or ["    -"]
+        lines.append("  uses most:")
+        lines += [f"    {m['uses']:>4}  {m['file']}" for m in graph["uses_most"][: args.limit]] or ["    -"]
+        between = sorted(folder_edges(graph, args.depth).items(), key=lambda kv: (-kv[1], kv[0]))
+        if between:
+            lines.append(f"  between folders ({args.depth} levels deep):")
+            lines += [f"    {n:>4}  {source} -> {target}" for (source, target), n in between[: args.limit]]
+        lines.append(f"  cycles: {len(graph['cycles'])}")
+        lines += [f"    {' <-> '.join(group[:6])}{' ...' if len(group) > 6 else ''}" for group in graph["cycles"][:5]]
+        lines.append(f"  unconnected files: {len(graph['unconnected'])}")
+        outside = list(graph["external"].items())[: args.limit]
+        lines.append("  external: " + (", ".join(f"{name} ({n})" for name, n in outside) or "-"))
+        return "\n".join(lines)
+
+    out.result(graph | {"mermaid": mermaid}, text=mermaid.rstrip("\n") if args.format == "mermaid" else summary)
+    if args.save:
+        folder = config.data_dir / "imports"
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{graph['name']}-{args.level}.md"
+        target.write_text(f"# Imports inside {graph['name']} ({args.level} level)\n\n```mermaid\n{mermaid}```\n",
+                          encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
+def cmd_score(args: argparse.Namespace, config: Config, out: Output) -> int:
+    from pathlib import Path
+
+    from gitrecon.mapping import score
+    from gitrecon.mapping.gitgraph import assign_lanes, branch_tips, read_history
+
+    path = Path(args.path).expanduser().resolve()
+    commits = read_history(path, args.max_commits or None)
+    lanes = assign_lanes(commits, branch_tips(path))
+    notes = score.score_notes(commits)
+    folder = config.data_dir / "scores"
+    if args.format == "midi":
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.mid"
+        target.write_bytes(score.to_midi(notes, tempo=args.tempo))
+        out.result({"repository": path.name, "notes": len(notes), "file": str(target)},
+                   text=f"{path.name}: {len(notes)} notes on {min(len(lanes), 6)} strings -> {target}")
+        return 0
+    text = score.to_tab(notes) if args.format == "tab" else score.to_abc(notes, title=path.name)
+    out.result({"repository": path.name, "format": args.format, "lanes": lanes, "score": text,
+                "notes": [{"sha": n.sha, "lane": n.lane, "string": n.string, "frets": n.frets, "eighths": n.eighths,
+                           "pitches": n.pitches, "tag": n.tag} for n in notes]}, text=text.rstrip("\n"))
+    if args.save:
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / f"{path.name}.{'abc' if args.format == 'abc' else 'tab.txt'}"
+        target.write_text(text, encoding="utf-8")
+        out.note(f"saved {target}")
+    return 0
+
+
 def cmd_gitgraph(args: argparse.Namespace, config: Config, out: Output) -> int:
     from collections import Counter
     from pathlib import Path
@@ -304,6 +372,27 @@ def register(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--list", action="store_true", help="also every commit with its form and type")
     add_output_flags(p, urls=False)
     p.set_defaults(func=cmd_commits)
+
+    p = sub.add_parser("imports", help="which file uses which inside a cloned repository (CaptorLex step 2)")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["summary", "mermaid"], default="summary")
+    p.add_argument("--level", choices=["folder", "file"], default="folder", help="mermaid: folders (default) or files")
+    p.add_argument("--depth", type=int, default=3, help="folder level: how many path parts make a folder")
+    p.add_argument("--max-nodes", type=int, default=80, help="file level: draw the N most connected files")
+    p.add_argument("--limit", type=int, default=8, help="summary: rows per list")
+    p.add_argument("--save", action="store_true", help="write the diagram to data/imports/<repository>-<level>.md")
+    add_output_flags(p, urls=False)  # --json: files, edges, most_used, cycles, external, mermaid
+    p.set_defaults(func=cmd_imports)
+
+    p = sub.add_parser("score", help="a cloned repository's history as music: guitar tab, ABC notation or MIDI")
+    p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")
+    p.add_argument("--format", choices=["tab", "abc", "midi"], default="tab",
+                   help="tab (default), abc, or midi - written to data/scores/<repository>.mid")
+    p.add_argument("--max-commits", type=int, default=64, help="play the newest N commits (0: all)")
+    p.add_argument("--tempo", type=int, default=96, help="midi: quarter notes per minute")
+    p.add_argument("--save", action="store_true", help="tab, abc: also write data/scores/<repository>.abc | .tab.txt")
+    add_output_flags(p, urls=False)
+    p.set_defaults(func=cmd_score)
 
     p = sub.add_parser("gitgraph", help="a cloned repository's history across all branches, as a Mermaid gitGraph")
     p.add_argument("path", nargs="?", default=".", help="the repository (default: the current folder)")

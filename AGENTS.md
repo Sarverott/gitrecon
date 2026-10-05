@@ -25,7 +25,8 @@ src/gitrecon/
 ├── storage/        rawbuffer — append-only gzip JSONL, data/raw/<source>/<day>/<HH>.json.gz
 ├── mapping/        graph — ActivityGraph: entity nodes + evidenced edges; network — relations around a
 │                   user (member_of, owned_by, fork_of); render — Mermaid (owners | repos), DOT, JSON;
-│                   gitgraph — history across branches as a Mermaid gitGraph
+│                   gitgraph — history across branches as a Mermaid gitGraph;
+│                   score — the same history as guitar tab, ABC, MIDI
 ├── analysis/       timeline (windows, cadence), rules (one function per label), labeler
 ├── code/           what repositories are made of: languages, lexical (Lark lexers), pyast, frameworks,
 │                   analyze — all driven by resources/
@@ -83,12 +84,21 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
 - **PeekerLex** = the quick reading (`gitrecon.code`: lexers, tables, manifests).
   **CaptorLex** = the deep reading (structure -> relations -> meaning); step 1 exists:
   `gitrecon.code.structure` (tree-sitter, `code` extra, `analyze --deep`) and `pyast`.
-  The user's names: use them.
+  Step 2 inside one repository: `gitrecon.code.imports` (Python by `ast`, others by
+  `resources/imports.yml`; networkx for cycles). Next circles, in the user's order: between an
+  owner's repositories, then all known public ones. The user's names: use them.
 - Results are kept by default in both the raw buffer (`data/raw/analysis/`) and the map
   (`data-heuristicality/code-analysis/<platform>/<owner>/<repo>.json`, `gitrecon.code.store`);
   `analyze --no-save`, clone commands `--no-analysis`. Only repositories GitHub shows public go
   to the map (`store.not_public`); `--map-priv-repos` writes the others too.
 - No Rattish grammar here: it belongs to the rattish project (`forge/rattish/rattish/TODO.md`).
+
+## Merging the remote in
+
+- `task merge:check` / `task merge:remote` (`scripts/merge_remote.py`): the procedure for a
+  diverged branch (the loop back-merges master into development on GitHub). Trial merge in
+  memory, no work over a dirty tree, never pushes, prints the undo command. Lockfile conflicts
+  take the remote side and re-lock; version lines: keep the remote one.
 
 ## Humanish and translation
 
