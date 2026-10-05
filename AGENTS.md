@@ -85,13 +85,24 @@ Runtime-only dependencies stay minimal - anything not imported by `src/` belongs
   **CaptorLex** = the deep reading (structure -> relations -> meaning); step 1 exists:
   `gitrecon.code.structure` (tree-sitter, `code` extra, `analyze --deep`) and `pyast`.
   Step 2 inside one repository: `gitrecon.code.imports` (Python by `ast`, others by
-  `resources/imports.yml`; networkx for cycles). Next circles, in the user's order: between an
-  owner's repositories, then all known public ones. The user's names: use them.
+  `resources/imports.yml`; networkx for cycles). Second circle, between an owner's repositories:
+  `gitrecon.code.relations` - submodules first, then dependencies (the user's order of
+  strength); then all known public repositories; URLs in code, then in text, last. The user's names: use them.
 - Results are kept by default in both the raw buffer (`data/raw/analysis/`) and the map
   (`data-heuristicality/code-analysis/<platform>/<owner>/<repo>.json`, `gitrecon.code.store`);
   `analyze --no-save`, clone commands `--no-analysis`. Only repositories GitHub shows public go
   to the map (`store.not_public`); `--map-priv-repos` writes the others too.
 - No Rattish grammar here: it belongs to the rattish project (`forge/rattish/rattish/TODO.md`).
+
+## CI facts
+
+- CI runs the tests on the runner's system Python (3.12.3 today), older than the local one:
+  argparse there rejects words after options for `nargs="*"` positionals - commands with such
+  an argument set `rest=` in their parser defaults (`cli._late_positionals`). Check with
+  `uv run --python 3.12.3 --isolated --no-default-groups --group test pytest`.
+- `cz check` runs over every commit of a PR: a browser commit with GitHub's wording blocks
+  the whole loop (`allowed_prefixes` in pyproject.toml holds the one exception).
+- Issue templates (`.github/ISSUE_TEMPLATE/`) use only labels that exist in the repository.
 
 ## Merging the remote in
 

@@ -102,6 +102,8 @@ dev = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
+# messages that are not ours to word: git's own, and GitHub's when issue templates are saved in the browser
+allowed_prefixes = ["Merge", "Revert", "Pull request", "fixup!", "squash!", "Update issue templates"]
 version_provider = "uv"
 version_files = ['metadata.json:"version"', "src/gitrecon/__init__.py:__version__"]
 tag_format = "v$version"

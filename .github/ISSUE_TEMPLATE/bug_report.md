@@ -1,38 +1,33 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: A command failed, printed something wrong, or the docs do not match what happens
 title: ''
-labels: ''
+labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**What happened**
+A clear description of what went wrong.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**The command**
+The exact command, and its output or the error (add `-v` for the log):
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+```sh
+gitrecon ...
+```
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+> Remove tokens, private repository names and anything else you would not publish before pasting.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**What you expected**
+What should have happened instead.
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**Environment**
+ - gitrecon version (`gitrecon status` or `pyproject.toml`):
+ - installed with: [uv in a clone / Docker image / other]
+ - extras installed: [none / hub / llm / net / code / translate / all]
+ - OS and Python version:
+ - with a GitHub token: [yes, classic / yes, fine-grained / no]
 
 **Additional context**
-Add any other context about the problem here.
+Anything else: the repository or user the command was pointed at (if public), how often it happens.
